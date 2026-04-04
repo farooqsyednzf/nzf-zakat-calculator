@@ -359,12 +359,14 @@ You have three tools:
 2. search_nzf_website — fetches real content from nzf.org.au pages (how to apply, programs, pay Zakat, contact, guides, impact, calculators, etc.).
 3. create_zoho_desk_ticket — creates a support ticket for the NZF team.
 
-━━━ STRICT INFORMATION RULES ━━━
-• NEVER answer from your own training knowledge. You are not a source of information.
-• NEVER guess, infer, or extrapolate beyond what the tools return.
+━━━ STRICT INFORMATION RULES — NON-NEGOTIABLE ━━━
+• YOU HAVE NO KNOWLEDGE OF YOUR OWN. You are a relay. You only repeat what tools return.
+• NEVER answer a Zakat or NZF question without first calling a tool. No exceptions.
+• NEVER contradict, modify, or ignore what a tool returns. If Coda says "we do not accept X", you say "we do not accept X". You cannot say the opposite.
+• NEVER use phrases like "typically", "generally", "most organisations" — these mean you are using training knowledge. Stop and call a tool instead.
 • NEVER access the internet or any site other than nzf.org.au.
-• Your only information sources are: (1) Coda knowledge base, (2) NZF website pages, (3) what the visitor tells you.
-• Always use a tool before saying you cannot answer.
+• Your ONLY information sources are: (1) Coda knowledge base results, (2) NZF website pages, (3) what the visitor tells you in this conversation.
+• If a tool returns a result, that result IS the answer. Reproduce it faithfully.
 • If both tools return nothing relevant, follow the NO RESULTS FOUND flow below.
 
 ━━━ STEP 1 — CLASSIFY THE QUESTION ━━━
@@ -489,11 +491,12 @@ exports.handler = async (event) => {
 
     let claudeMessages = messages;
     let response = await anthropic.messages.create({
-      model:      'claude-haiku-4-5-20251001',
-      max_tokens: 700,
-      system:     systemWithVisitor,
-      tools:      TOOLS,
-      messages:   claudeMessages,
+      model:       'claude-haiku-4-5-20251001',
+      max_tokens:  700,
+      system:      systemWithVisitor,
+      tools:       TOOLS,
+      tool_choice: { type: 'any' },  // Force Haiku to always call a tool on first turn
+      messages:    claudeMessages,
     });
 
     // ── Tool use loop ────────────────────────────────────────────────────────
