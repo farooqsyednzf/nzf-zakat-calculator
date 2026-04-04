@@ -225,7 +225,7 @@
       border-radius: 14px;
       font-size: 14px;
       line-height: 1.55;
-      white-space: pre-wrap;
+      white-space: normal;
       word-break: break-word;
     }
     .nzf-user  .nzf-bubble { background: #BE1E2D; color: #fff; border-bottom-right-radius: 4px; }
@@ -416,7 +416,7 @@
     const wrapper = document.createElement('div');
     wrapper.className = `nzf-msg ${role === 'user' ? 'nzf-user' : 'nzf-agent'}`;
     wrapper.innerHTML = `
-      <div class="nzf-bubble">${linkify(escapeHtml(text))}</div>
+      <div class="nzf-bubble">${linkify(renderMarkdown(escapeHtml(text)))}</div>
       <span class="nzf-msg-time">${nowTime()}</span>`;
     body.insertBefore(wrapper, typing);
     body.scrollTop = body.scrollHeight;
@@ -428,6 +428,26 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  // Convert markdown syntax to HTML (runs after escapeHtml, before linkify)
+  function renderMarkdown(str) {
+    return str
+      // Bold: **text**
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italic: *text* (single asterisk, not part of **)
+      .replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>')
+      // Headings: ### text or ## text → bold line
+      .replace(/^#{1,3}\s+(.+)$/gm, '<strong>$1</strong>')
+      // Bullet points: lines starting with - or •
+      .replace(/^[-•]\s+(.+)$/gm, '&bull;&nbsp;$1')
+      // Numbered list: 1. text, 2. text etc.
+      .replace(/^\d+\.\s+(.+)$/gm, (m, item, offset, str) => {
+        const num = m.match(/^(\d+)/)[1];
+        return `<span style="display:inline-block;min-width:18px;font-weight:600;">${num}.</span>&nbsp;${item}`;
+      })
+      // Newlines → line breaks
+      .replace(/\n/g, '<br>');
   }
 
   // Convert plain URLs in escaped text into clickable links
@@ -507,11 +527,14 @@
     setInputEnabled(false);
 
     try {
+      // Keep last 10 turns max so long chats don't slow down or timeout
+      const trimmedHistory = chatHistory.slice(-20);
+
       const res = await fetch(API_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({
-          messages:     chatHistory,
+          messages:     trimmedHistory,
           visitorName,
           visitorEmail,
         }),
