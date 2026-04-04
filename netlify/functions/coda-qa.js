@@ -1,56 +1,68 @@
-// netlify/functions/coda-qa.js
-// Proxies the Coda API so the browser never touches Coda directly (avoids CORS).
-// Deploy with: CODA_API_KEY environment variable set in Netlify dashboard.
+const https = require('https');
 
-exports.handler = async (event, context) => {
-  const CODA_API_KEY = process.env.CODA_API_KEY;
+exports.handler = function(event, context, callback) {
+  const key = process.env.CODA_API_KEY;
 
-  if (!CODA_API_KEY) {
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: 'CODA_API_KEY not configured in Netlify environment variables.' })
-    };
+  if (!key) {
+    console.log('ERROR: CODA_API_KEY environment variable is not set');
+    return callback(null, { statusCode: 500, body: 'CODA_API_KEY not set' });
   }
 
-  const DOC_ID   = 'cKc2cGnJOT';
-  const TABLE_ID = 'grid-l-jaTOjaOG';
-  const url = `https://coda.io/apis/v1/docs/${DOC_ID}/tables/${TABLE_ID}/rows?limit=500`;
+  console.log('Fetching from Coda...');
 
-  try {
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${CODA_API_KEY}` }
-    });
-
-    if (!res.ok) {
-      throw new Error(`Coda returned ${res.status}: ${await res.text()}`);
+  const options = {
+    hostname: 'coda.io',
+    path: '/apis/v1/docs/cKc2cGnJOT/tables/grid-l-jaTOjaOG/rows?limit=500',
+    method: 'GET',
+    headers: {
+      'Authorization': 'Bearer ' + key,
+      'Content-Type': 'application/json'
     }
+  };
 
-    const data = await res.json();
+  var req = https.request(options, function(res) {
+    var body = '';
+    res.on('data', function(chunk) { body += chunk; });
+    res.on('end', function() {
+      console.log('Coda responded with status:', res.statusCode);
+      if (res.statusCode !== 200) {
+        console.log('Coda error body:', body.slice(0, 300));
+        return callback(null, { statusCode: 500, body: 'Coda error ' + res.statusCode });
+      }
+      try {
+        var data = JSON.parse(body);
+        var qa = data.items
+          .map(function(row) {
+            return {
+              category: row.values['c-Y9s81kR1xZ'] || '',
+              question: row.values['c-ysZv6rkJbo'] || '',
+              keywords: (row.values['c-pqNO0TdwYM'] || '').toLowerCase(),
+              answer:   row.values['c-w2yMvgV2RI'] || ''
+            };
+          })
+          .filter(function(r) { return r.question && r.answer; });
 
-    const qa = data.items
-      .map(row => ({
-        category: row.values['c-Y9s81kR1xZ'] || '',
-        question: row.values['c-ysZv6rkJbo'] || '',
-        keywords: (row.values['c-pqNO0TdwYM'] || '').toLowerCase(),
-        answer:   row.values['c-w2yMvgV2RI'] || ''
-      }))
-      .filter(r => r.question && r.answer);
+        console.log('Success: returning ' + qa.length + ' Q&A entries');
+        callback(null, {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=3600'
+          },
+          body: JSON.stringify(qa)
+        });
+      } catch(e) {
+        console.log('JSON parse error:', e.message);
+        callback(null, { statusCode: 500, body: 'Parse error: ' + e.message });
+      }
+    });
+  });
 
-    return {
-      statusCode: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'public, max-age=3600', // cache for 1 hour on CDN
-        'Access-Control-Allow-Origin': '*'
-      },
-      body: JSON.stringify(qa)
-    };
+  req.on('error', function(e) {
+    console.log('Request error:', e.message);
+    callback(null, { statusCode: 500, body: 'Request failed: ' + e.message });
+  });
 
-  } catch (err) {
-    console.error('Coda fetch failed:', err.message);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({ error: err.message })
-    };
-  }
+  req.end();
 };
