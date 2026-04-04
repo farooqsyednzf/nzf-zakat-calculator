@@ -135,21 +135,39 @@ async function searchNZFWebsite(query) {
 }
 
 // ─── Tool: Search Coda knowledge base ─────────────────────────────────────────
-async function searchCodaKnowledge(query) {
-  // Coda's query param only searches the display column (QID, a number).
-  // Instead we fetch all rows and do client-side keyword matching across
-  // Question, Answer, Tags and Category so nothing gets missed.
+// ─── Coda row cache ────────────────────────────────────────────────────────
+// Fetching all rows is expensive — cache them in module scope so warm Lambda
+// instances reuse the same data instead of re-fetching on every message.
+let codaCache = null;
+let codaCacheExpiry = 0;
+const CODA_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+async function getCodaRows() {
+  const now = Date.now();
+  if (codaCache && now < codaCacheExpiry) return codaCache;
+
   const url = `https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables/${CODA_TABLE_ID}/rows`
     + `?limit=500&valueFormat=simpleWithArrays&useColumnNames=true`;
 
-  const res = await fetch(url, {
-    headers: { Authorization: `Bearer ${CODA_API_KEY}` },
-  });
-
-  if (!res.ok) return { found: false, error: `Coda API error: ${res.status}` };
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${CODA_API_KEY}` } });
+  if (!res.ok) throw new Error(`Coda fetch failed: ${res.status}`);
 
   const data = await res.json();
-  if (!data.items || data.items.length === 0) return { found: false, results: [] };
+  codaCache = data.items || [];
+  codaCacheExpiry = now + CODA_CACHE_TTL;
+  console.log(`[Coda] Cache refreshed — ${codaCache.length} rows`);
+  return codaCache;
+}
+
+async function searchCodaKnowledge(query) {
+  let rows;
+  try {
+    rows = await getCodaRows();
+  } catch (err) {
+    return { found: false, error: err.message };
+  }
+
+  if (!rows.length) return { found: false, results: [] };
 
   // Score each row by how many query words appear in the searchable fields
   const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
