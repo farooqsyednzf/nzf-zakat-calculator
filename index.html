@@ -1995,33 +1995,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp active"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 1 of 7: Hawl and Nisab</div>
-      <h2 class="ph1">Your Zakat anniversary and Nisab</h2>
-      <p class="plead">The hawl (lunar year) is when you calculate and pay Zakat each year. Fix your anniversary date once and use it consistently every year.</p>
-      <div class="info info-green"><strong>What is hawl?</strong> Hawl is the lunar year that must pass on wealth before Zakat becomes due. It starts from the date your wealth first reached the Nisab threshold.</div>
+      <div class="eyebrow">Step 1 of 7: Nisab Threshold</div>
+      <h2 class="ph1">Before you begin</h2>
+      <p class="plead">Choose your Nisab standard. This is the only setting needed before entering your assets.</p>
 
-      <div class="ex open" id="dx-hawl">
-        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#128197;</span><span class="ex-label">Zakat anniversary date</span><span class="ex-chev">&#9660;</span></div>
-        <div class="ex-body">
-          <div class="two-col">
-            <div class="field"><div class="flabel">Anniversary day and month</div><input type="date" class="inp inp-nopfx" id="d-hawl-date" oninput="dRecalc()"></div>
-            <div class="field"><div class="flabel">Year wealth first reached Nisab</div>
-              <div class="sel-wrap"><select class="sel" id="d-hawl-year">
-                <option value="">Select year</option>
-                <option>2025</option><option>2024</option><option>2023</option><option>2022</option>
-                <option>2021</option><option>2020</option><option>2019</option><option>Before 2019</option>
-              </select><span class="sel-arrow">&#9660;</span></div>
-            </div>
-          </div>
-          <div class="field" style="margin-top:4px;">
-            <div class="flabel">Do you have multiple Zakat anniversary dates?<div class="hint-btn">?<div class="tt">Common for business owners — business assets may have a different anniversary than personal savings.</div></div></div>
-            <div style="display:flex;gap:8px;margin-top:6px;">
-              <div class="dtree-opt" id="dopt-hawl-no" onclick="setMultiHawl('no')">No — single date</div>
-              <div class="dtree-opt" id="dopt-hawl-yes" onclick="setMultiHawl('yes')">Yes — multiple dates</div>
-            </div>
-            <div class="dtree-result warn on" id="multi-hawl-note" style="display:none;margin-top:8px;">Each asset pool starts its own hawl from when it first reached Nisab. Enter values for each category and note the date acquired. Assets that have not completed their hawl are not yet zakatable.</div>
-          </div>
-        </div>
+      <div class="info info-green">
+        <strong>About your Zakat anniversary (hawl):</strong> Your hawl is the lunar year that must pass on wealth before Zakat becomes due. It starts from the date your wealth first exceeded the Nisab threshold. Once you know that date, return to it each year to calculate and pay your Zakat. If you are unsure of the exact date, many scholars accept Ramadan as a convenient annual default.
+      </div>
+
+      <div class="info info-yellow" style="margin-top:4px;">
+        <strong>Business owners with multiple hawl dates:</strong> If your business was established after your personal savings first reached Nisab, your business assets may have a separate anniversary. Note the date each asset category was first acquired above Nisab and apply Zakat only to those that have completed a full lunar year.
       </div>
 
       <div class="ex open" id="dx-d-nisab">
