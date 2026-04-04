@@ -240,6 +240,7 @@ async function createZohoDeskTicket({
   });
 
   const data = await res.json();
+  console.log('[ZohoDesk] Ticket API response:', JSON.stringify(data).slice(0, 500));
   if (data.id) return { success: true, ticketId: data.id, ticketNumber: data.ticketNumber };
   return { success: false, error: data.message || JSON.stringify(data) };
 }
@@ -401,7 +402,8 @@ This flow ONLY applies when BOTH tools have returned no relevant results. If eve
 • This is an Islamic not-for-profit. Be respectful and culturally aware.
 • Plain language. No jargon.
 • Never end without offering a next step.
-• Once a ticket is created, confirm warmly and tell them which team will follow up by email.`;
+• Once a ticket is created: if the tool returns success:true, confirm warmly and tell them which team member will follow up and by which method (email or mobile). Include the ticket number if returned.
+• If the tool returns success:false or an error: do NOT tell the visitor a ticket was created. Instead say: "I'm sorry, something went wrong on our end and I wasn't able to raise that ticket. Please contact us directly at 1300 663 729 or via nzf.org.au/contact/ and our team will be happy to help you." Never fabricate a ticket confirmation.`;
 
 // ─── CORS headers ──────────────────────────────────────────────────────────────
 const CORS = {
