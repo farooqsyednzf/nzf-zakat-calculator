@@ -136,8 +136,11 @@ async function searchNZFWebsite(query) {
 
 // ─── Tool: Search Coda knowledge base ─────────────────────────────────────────
 async function searchCodaKnowledge(query) {
+  // Coda's query param only searches the display column (QID, a number).
+  // Instead we fetch all rows and do client-side keyword matching across
+  // Question, Answer, Tags and Category so nothing gets missed.
   const url = `https://coda.io/apis/v1/docs/${CODA_DOC_ID}/tables/${CODA_TABLE_ID}/rows`
-    + `?query=${encodeURIComponent(query)}&limit=5&valueFormat=simpleWithArrays&useColumnNames=true`;
+    + `?limit=500&valueFormat=simpleWithArrays&useColumnNames=true`;
 
   const res = await fetch(url, {
     headers: { Authorization: `Bearer ${CODA_API_KEY}` },
@@ -148,13 +151,41 @@ async function searchCodaKnowledge(query) {
   const data = await res.json();
   if (!data.items || data.items.length === 0) return { found: false, results: [] };
 
+  // Score each row by how many query words appear in the searchable fields
+  const words = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  const scored = data.items.map(row => {
+    const v = row.values;
+    const haystack = [
+      v['Question'] || '',
+      v['Answer']   || '',
+      v['Tags']     || '',
+      v['Category'] || '',
+    ].join(' ').toLowerCase();
+
+    const score = words.reduce((acc, word) => {
+      if (haystack.includes(word)) acc += 1;
+      // Bonus for match in Question or Tags (higher signal)
+      if ((v['Question'] || '').toLowerCase().includes(word)) acc += 2;
+      if ((v['Tags']     || '').toLowerCase().includes(word)) acc += 1;
+      return acc;
+    }, 0);
+
+    return { score, v };
+  })
+  .filter(r => r.score > 0)
+  .sort((a, b) => b.score - a.score)
+  .slice(0, 4);
+
+  if (scored.length === 0) return { found: false, results: [] };
+
   return {
     found: true,
-    results: data.items.map(row => ({
-      category: row.values['Category'] || '',
-      question: row.values['Question'] || '',
-      answer:   row.values['Answer']   || '',
-      tags:     row.values['Tags']     || '',
+    results: scored.map(r => ({
+      category: r.v['Category'] || '',
+      question: r.v['Question'] || '',
+      answer:   r.v['Answer']   || '',
+      tags:     r.v['Tags']     || '',
     })),
   };
 }
