@@ -129,7 +129,7 @@ const TOOLS = [
         name:        { type: 'string', description: 'Full name of the visitor' },
         email:       { type: 'string', description: 'Email address of the visitor' },
         subject:     { type: 'string', description: 'Short ticket subject (max 100 chars)' },
-        description: { type: 'string', description: 'Full description — include the visitor's question and any relevant context from the conversation' },
+        description: { type: 'string', description: "Full description — include the visitor's question and any relevant context from the conversation" },
         department: {
           type: 'string',
           enum: ['zakat_distribution', 'zakat_education', 'donor_management', 'finance', 'general'],
