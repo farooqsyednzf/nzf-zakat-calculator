@@ -123,7 +123,7 @@ async function searchNZFWebsite(query) {
         .trim();
 
       // Trim to 2500 chars to avoid huge context
-      if (text.length > 2500) text = text.slice(0, 2500) + '…';
+      if (text.length > 1500) text = text.slice(0, 1500) + '…';
 
       results.push({ url: page.url, topic: page.topic, content: text });
     } catch (err) {
@@ -431,8 +431,8 @@ exports.handler = async (event) => {
 
     let claudeMessages = messages;
     let response = await anthropic.messages.create({
-      model:      'claude-sonnet-4-20250514',
-      max_tokens: 1024,
+      model:      'claude-haiku-4-5-20251001',
+      max_tokens: 700,
       system:     systemWithVisitor,
       tools:      TOOLS,
       messages:   claudeMessages,
@@ -443,21 +443,21 @@ exports.handler = async (event) => {
     while (response.stop_reason === 'tool_use' && iterations < 6) {
       iterations++;
       const toolUseBlocks = response.content.filter(b => b.type === 'tool_use');
-      const toolResults   = [];
 
-      for (const toolUse of toolUseBlocks) {
+      // Run all tool calls in parallel for faster responses
+      const toolResults = await Promise.all(toolUseBlocks.map(async (toolUse) => {
         let result;
         try {
-          if      (toolUse.name === 'search_coda_knowledge') result = await searchCodaKnowledge(toolUse.input.query);
-          else if (toolUse.name === 'search_nzf_website')    result = await searchNZFWebsite(toolUse.input.query);
+          if      (toolUse.name === 'search_coda_knowledge')   result = await searchCodaKnowledge(toolUse.input.query);
+          else if (toolUse.name === 'search_nzf_website')      result = await searchNZFWebsite(toolUse.input.query);
           else if (toolUse.name === 'create_zoho_desk_ticket') result = await createZohoDeskTicket(toolUse.input);
           else result = { error: `Unknown tool: ${toolUse.name}` };
         } catch (toolErr) {
           console.error(`Tool error [${toolUse.name}]:`, toolErr);
           result = { error: toolErr.message };
         }
-        toolResults.push({ type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) });
-      }
+        return { type: 'tool_result', tool_use_id: toolUse.id, content: JSON.stringify(result) };
+      }));
 
       claudeMessages = [
         ...claudeMessages,
@@ -466,8 +466,8 @@ exports.handler = async (event) => {
       ];
 
       response = await anthropic.messages.create({
-        model:      'claude-sonnet-4-20250514',
-        max_tokens: 1024,
+        model:      'claude-haiku-4-5-20251001',
+        max_tokens: 700,
         system:     systemWithVisitor,
         tools:      TOOLS,
         messages:   claudeMessages,
