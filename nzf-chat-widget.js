@@ -416,7 +416,7 @@
     const wrapper = document.createElement('div');
     wrapper.className = `nzf-msg ${role === 'user' ? 'nzf-user' : 'nzf-agent'}`;
     wrapper.innerHTML = `
-      <div class="nzf-bubble">${escapeHtml(text)}</div>
+      <div class="nzf-bubble">${linkify(escapeHtml(text))}</div>
       <span class="nzf-msg-time">${nowTime()}</span>`;
     body.insertBefore(wrapper, typing);
     body.scrollTop = body.scrollHeight;
@@ -428,6 +428,15 @@
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+  }
+
+  // Convert plain URLs in escaped text into clickable links
+  function linkify(str) {
+    // Match http/https URLs (already HTML-escaped, so & is &amp; etc.)
+    return str.replace(
+      /(https?:\/\/[^\s<>"&]+)/g,
+      '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:inherit;text-decoration:underline;word-break:break-all;opacity:0.9;">$1</a>'
+    );
   }
 
   // ─── Helper: show/hide typing ───────────────────────────────────────────
