@@ -22,7 +22,7 @@ const DEPT = {
 
 // ─── Zoho OAuth token refresh ───────────────────────────────────────────────
 async function getZohoAccessToken() {
-  const res = await fetch('https://accounts.zoho.com.au/oauth/v2/token', {
+  const res = await fetch('https://accounts.zoho.com/oauth/v2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
@@ -86,7 +86,7 @@ async function createZohoDeskTicket({ name, email, subject, description, departm
     contact: { lastName, email },
   };
 
-  const res = await fetch('https://desk.zoho.com.au/api/v1/tickets', {
+  const res = await fetch('https://desk.zoho.com/api/v1/tickets', {
     method:  'POST',
     headers: {
       Authorization:  `Zoho-oauthtoken ${token}`,
