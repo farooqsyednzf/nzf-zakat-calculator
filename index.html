@@ -536,6 +536,7 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
 }
 
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
 
@@ -1395,12 +1396,31 @@ function updateQAStatus(msg) {
 function scoreQA(qa, query) {
   const q = query.toLowerCase();
   const words = q.split(/\s+/).filter(w => w.length > 2);
+  const qText  = qa.question.toLowerCase();
+  const kText  = qa.keywords.toLowerCase();
+  const aText  = qa.answer.toLowerCase();
   let score = 0;
+
   words.forEach(w => {
-    if (qa.question.toLowerCase().includes(w)) score += 3;
-    if (qa.keywords.includes(w)) score += 2;
-    if (qa.answer.toLowerCase().includes(w)) score += 1;
+    // Exact word match — highest weight
+    if (qText.includes(w)) score += 3;
+    if (kText.includes(w)) score += 2;
+    if (aText.includes(w)) score += 1;
+
+    // Stem/prefix match — catches "deduct" matching "deduction/deductible/deducted"
+    // and "debt" matching "debts", "invest" matching "investment" etc.
+    if (w.length >= 4) {
+      const stem = w.slice(0, Math.max(4, w.length - 2)); // e.g. "deduct", "debt", "invest"
+      if (!qText.includes(w) && qText.includes(stem)) score += 2;
+      if (!kText.includes(w) && kText.includes(stem)) score += 1.5;
+      if (!aText.includes(w) && aText.includes(stem)) score += 0.5;
+    }
   });
+
+  // Bonus: category match
+  const cat = qa.category.toLowerCase();
+  if (words.some(w => cat.includes(w))) score += 1;
+
   return score;
 }
 
@@ -1559,19 +1579,41 @@ function buildSummaryText() {
   return lines.join('\n');
 }
 
-function sendSummaryEmail() {
+async function sendSummaryEmail() {
   const email = document.getElementById('save-email-inp').value.trim();
-  if (!email || !email.includes('@')) {
-    showSaveMsg('Please enter a valid email address.', 'var(--red)');
-    return;
+  if (!email || !email.includes('@')) { showSaveMsg('Please enter a valid email address.', 'var(--red)'); return; }
+  const btn = document.querySelector('.save-btn');
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+  showSaveMsg('Generating your PDF and sending...', 'var(--grey)');
+  try {
+    const pdfBase64 = await generatePDFBase64('guided');
+    const c = calcAll();
+    const res = await fetch('/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        year: new Date().getFullYear(),
+        pdfBase64: pdfBase64,
+        summary: {
+          zakat: fmtAUDf(c.zakat), cash: fmtAUDf(c.cash), gold: fmtAUDf(c.goldMetal),
+          invest: fmtAUDf(c.invest), biz: fmtAUDf(c.biz), liab: fmtAUDf(c.liab),
+          zakatable: fmtAUDf(c.zakatable), nisab: c.nisabVal != null ? fmtAUDf(c.nisabVal) : 'Not set',
+          nisabMet: c.met
+        }
+      })
+    });
+    const result = await res.json();
+    if (result.success) {
+      showSaveMsg('Sent! Check your inbox for your Zakat summary with PDF attached.', 'var(--green)');
+    } else {
+      showSaveMsg('Could not send: ' + (result.error || 'unknown error') + '. Try the PDF button instead.', 'var(--red)');
+    }
+  } catch(e) {
+    showSaveMsg('Could not send email. Try the PDF button instead.', 'var(--red)');
+    console.error('Email send error:', e);
   }
-  const summary = buildSummaryText();
-  const subject = encodeURIComponent('My NZF Zakat Calculation ' + new Date().getFullYear());
-  const body = encodeURIComponent(summary);
-  // Open default mail client with summary pre-filled
-  const mailto = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
-  window.location.href = mailto;
-  showSaveMsg('Your email client has been opened with your summary. If nothing opened, use the PDF button below to save your results.', 'var(--green)');
+  if (btn) { btn.textContent = 'Send summary'; btn.disabled = false; }
 }
 
 const NZF_LOGO = "data:image/png;base64,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";
@@ -1979,33 +2021,38 @@ function goResult(mode) {
 /* =========================================================
    DETAILED EMAIL + PDF
    ========================================================= */
-function dSendEmail() {
+async function dSendEmail() {
   const email = document.getElementById('d-save-email').value.trim();
   if (!email || !email.includes('@')) { dShowSaveMsg('Please enter a valid email address.', 'var(--red)'); return; }
-  const c = calcDetailed();
-  const yr = new Date().getFullYear();
-  const lines = [
-    'NZF DETAILED ZAKAT CALCULATION SUMMARY', '='.repeat(40),
-    'Year: ' + yr,
-    'Nisab: ' + (DS.nisab === 'silver' ? 'Silver A$2,028.95' : 'Gold A$18,514.70'),
-    'Shares method: ' + (DS.sharesMethod === 'simple' ? 'Simplified' : 'Detailed'),
-    '', 'ASSETS',
-    'Cash and savings: ' + fmtAUDf(c.cashTotal),
-    'Gold and silver: ' + fmtAUDf(c.metalsTotal),
-    'Investments: ' + fmtAUDf(c.investTotal),
-    'Business assets: ' + fmtAUDf(c.bizTotal),
-    '', 'DEDUCTIONS',
-    'Total immediate debts: -' + fmtAUDf(c.totalDeduct),
-    '', 'RESULT',
-    'Net zakatable wealth: ' + fmtAUDf(c.zakatable),
-    'ZAKAT DUE (2.5%): ' + fmtAUDf(c.zakat),
-    '', 'Pay at: nzf.org.au/pay/zakat',
-    '1300 663 729 | nzf.org.au'
-  ];
-  const subject = encodeURIComponent('My NZF Detailed Zakat Calculation ' + yr);
-  const body = encodeURIComponent(lines.join('\n'));
-  window.location.href = 'mailto:' + email + '?subject=' + subject + '&body=' + body;
-  dShowSaveMsg('Your email client has been opened with your summary.', 'var(--green)');
+  dShowSaveMsg('Generating your PDF and sending...', 'var(--grey)');
+  try {
+    const pdfBase64 = await generatePDFBase64('detailed');
+    const c = calcDetailed();
+    const res = await fetch('/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        year: new Date().getFullYear(),
+        pdfBase64: pdfBase64,
+        summary: {
+          zakat: fmtAUDf(c.zakat), cash: fmtAUDf(c.cashTotal), gold: fmtAUDf(c.metalsTotal),
+          invest: fmtAUDf(c.investTotal), biz: fmtAUDf(c.bizTotal), liab: fmtAUDf(c.totalDeduct),
+          zakatable: fmtAUDf(c.zakatable), nisab: c.nisabVal != null ? fmtAUDf(c.nisabVal) : 'Not set',
+          nisabMet: c.met
+        }
+      })
+    });
+    const result = await res.json();
+    if (result.success) {
+      dShowSaveMsg('Sent! Check your inbox for your Zakat summary with PDF attached.', 'var(--green)');
+    } else {
+      dShowSaveMsg('Could not send: ' + (result.error || 'unknown error') + '. Try the PDF button instead.', 'var(--red)');
+    }
+  } catch(e) {
+    dShowSaveMsg('Could not send email. Try the PDF button instead.', 'var(--red)');
+    console.error('Email send error:', e);
+  }
 }
 
 function dDownloadPDF() {
@@ -2042,6 +2089,126 @@ function dShowSaveMsg(msg, color) {
   el.style.display = 'block';
   el.style.color = color || 'var(--green)';
   el.textContent = msg;
+}
+
+
+/* =========================================================
+   PDF GENERATION — jsPDF client-side
+   ========================================================= */
+async function generatePDFBase64(mode) {
+  // jsPDF loaded via CDN
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+
+  const c = mode === 'detailed' ? calcDetailed() : calcAll();
+  const yr = new Date().getFullYear();
+  const red   = [238, 53, 38];
+  const dark  = [35, 31, 31];
+  const grey  = [76, 96, 96];
+  const light = [245, 244, 244];
+  const white = [255, 255, 255];
+  const green = [73, 169, 66];
+
+  const W = 210, margin = 18;
+  let y = 0;
+
+  // Header band
+  doc.setFillColor(...red);
+  doc.rect(0, 0, W, 52, 'F');
+  doc.setTextColor(...white);
+  doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('YOUR ZAKAT CALCULATION SUMMARY  |  ' + yr, W/2, 14, { align:'center' });
+  doc.setFontSize(36); doc.setFont('helvetica','bold');
+  const zakatAmt = mode === 'detailed' ? fmtAUDf(c.zakat) : fmtAUDf(c.zakat);
+  doc.text(zakatAmt, W/2, 34, { align:'center' });
+  doc.setFontSize(10); doc.setFont('helvetica','normal');
+  doc.text('2.5% of zakatable wealth', W/2, 44, { align:'center' });
+
+  y = 62;
+
+  // Method used (if detailed)
+  if (mode === 'detailed') {
+    doc.setFillColor(235,245,255);
+    doc.roundedRect(margin, y, W - margin*2, 16, 2, 2, 'F');
+    doc.setTextColor(...grey); doc.setFontSize(8);
+    doc.text('Shares: ' + (DS.sharesMethod==='simple'?'Simplified':'Detailed') +
+      '  |  Inventory: ' + (DS.stockMethod==='cost'?'Cost price':'Market value') +
+      '  |  Nisab: ' + (DS.nisab==='silver'?'Silver A$2,028.95':'Gold A$18,514.70'), W/2, y+10, { align:'center' });
+    y += 24;
+  }
+
+  // Section helper
+  function drawSection(label) {
+    doc.setFillColor(...light);
+    doc.rect(margin, y, W - margin*2, 8, 'F');
+    doc.setTextColor(...grey); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text(label.toUpperCase(), margin+4, y+5.5);
+    y += 10;
+  }
+
+  // Row helper
+  function drawRow(label, value, opts) {
+    opts = opts || {};
+    if (opts.highlight === 'green') doc.setFillColor(210, 240, 210);
+    else if (opts.highlight === 'red') doc.setFillColor(255, 246, 245);
+    else doc.setFillColor(255, 255, 255);
+    doc.rect(margin, y, W - margin*2, 9, 'F');
+    if (opts.highlight === 'red') { doc.setTextColor(238, 53, 38); }
+    else if (opts.highlight === 'green') { doc.setTextColor(35, 100, 35); }
+    else { doc.setTextColor(35, 31, 31); }
+    if (opts.highlight) { doc.setFont('helvetica','bold'); } else { doc.setFont('helvetica','normal'); }
+    doc.setFontSize(10);
+    doc.text(label, margin+4, y+6);
+    doc.text(value || 'A$0.00', W - margin - 4, y+6, { align:'right' });
+    doc.setDrawColor(245, 244, 244);
+    doc.line(margin, y+9, W-margin, y+9);
+    y += 9;
+  }
+
+  // Assets section
+  drawSection('Assets');
+  if (mode === 'detailed') {
+    drawRow('Cash and savings', fmtAUDf(c.cashTotal));
+    drawRow('Gold and silver', fmtAUDf(c.metalsTotal));
+    drawRow('Investments', fmtAUDf(c.investTotal));
+    drawRow('Business assets', fmtAUDf(c.bizTotal));
+  } else {
+    drawRow('Cash and savings', fmtAUDf(c.cash));
+    drawRow('Gold and silver', fmtAUDf(c.goldMetal));
+    drawRow('Investments', fmtAUDf(c.invest));
+  }
+  y += 4;
+
+  // Deductions
+  drawSection('Deductions');
+  const liabAmt = mode === 'detailed' ? c.totalDeduct : c.liab;
+  drawRow('Immediate debts', '-' + fmtAUDf(liabAmt));
+  y += 4;
+
+  // Result
+  drawSection('Result');
+  drawRow('Net zakatable wealth', fmtAUDf(c.zakatable), { highlight:'green' });
+  drawRow('Nisab threshold', c.nisabVal != null ? fmtAUDf(c.nisabVal) : 'Not set');
+  drawRow('Nisab reached', c.met ? 'Yes' : 'No');
+  drawRow('Zakat due (2.5%)', fmtAUDf(c.zakat), { highlight:'red' });
+  y += 8;
+
+  // Du'a box
+  doc.setFillColor(35,31,31);
+  doc.roundedRect(margin, y, W - margin*2, 22, 2, 2, 'F');
+  doc.setTextColor(253,185,19);
+  doc.setFontSize(13); doc.setFont('helvetica','bolditalic');
+  doc.text('\u0627\u0644\u0644\u0651\u0647\u064f\u0645\u0651 \u0627\u062c\u0652\u0639\u0644\u0652\u0647\u0627 \u0645\u064e\u063a\u0652\u0646\u064e\u0645\u064b\u0627 \u0648\u0644\u0627 \u062a\u064e\u062c\u0652\u0639\u0644\u0652\u0647\u0627 \u0645\u064e\u063a\u0652\u0631\u064e\u0645\u064b\u0627', W/2, y+11, { align:'center' });
+  doc.setTextColor(200,200,200); doc.setFontSize(8); doc.setFont('helvetica','italic');
+  doc.text('"O Allah, make it a gain and do not make it a loss."', W/2, y+18, { align:'center' });
+  y += 30;
+
+  // Footer
+  doc.setTextColor(...grey); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  doc.text('Pay at nzf.org.au/pay/zakat  |  1300 663 729  |  0449 004 663  |  DGR tax deductible', W/2, y, { align:'center' });
+
+  // Return as base64 string (without the data URL prefix)
+  return doc.output('datauristring').split(',')[1];
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -2751,6 +2918,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>
 </div>
+
 
 </body>
 </html>
