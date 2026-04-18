@@ -222,7 +222,8 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
 .mode-hero-ey{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--red);margin-bottom:10px;}
 .mode-hero h1{font-family:var(--font-head);font-size:38px;color:var(--black);line-height:1.15;margin-bottom:10px;}
 .mode-hero p{font-size:14px;color:var(--grey);}
-.mode-cards{max-width:900px;margin:-40px auto 0;padding:0 36px 48px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;position:relative;z-index:1;}
+.mode-cards{max-width:1100px;margin:-40px auto 0;padding:0 36px 48px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;position:relative;z-index:1;}
+@media(max-width:1024px){.mode-cards{grid-template-columns:repeat(2,1fr);}}
 .mc{background:var(--white);border-radius:5px;border:1.5px solid var(--light-grey);padding:24px 18px 20px;cursor:pointer;transition:all .22s;position:relative;}
 .mc:hover{border-color:var(--red);transform:translateY(-3px);box-shadow:0 8px 20px rgba(238,53,38,.1);}
 .mc.featured{border-color:var(--red);border-width:2px;}
@@ -535,6 +536,9 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
   flex-shrink: 0;
 }
 
+
+/* Hide business step in detailed mode rail */
+body.mode-detailed .d-step-rail .stp-business { display: none !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -603,8 +607,8 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
     <div class="mc" onclick="selectMode('detailed')">
       <div class="mc-icon">📊</div>
       <div class="mc-title">Detailed</div>
-      <div class="mc-desc">For business owners and people with complex assets. A full 7-step flow with methodology choices.</div>
-      <ul class="mc-feats"><li>Business inventory and receivables</li><li>Shares methodology selector</li><li>Superannuation decision tree</li></ul>
+      <div class="mc-desc">For individuals with complex personal assets. A full 6-step flow with methodology choices for shares, super and crypto.</div>
+      <ul class="mc-feats"><li>Shares methodology selector</li><li>Superannuation decision tree</li><li>Crypto treatment options</li></ul>
       <div class="mc-chat-strip">
         <div class="mc-chat-dot"></div>
         <div class="mc-chat-text">
@@ -612,8 +616,23 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
           <span>Get help with complex calculations directly from our knowledge base</span>
         </div>
       </div>
-      <div class="mc-time">~15&ndash;20 minutes</div>
+      <div class="mc-time">~12&ndash;15 minutes</div>
       <div class="mc-cta">Start detailed <span>→</span></div>
+    </div>
+    <div class="mc" onclick="selectMode('business')">
+      <div class="mc-icon">🏢</div>
+      <div class="mc-title">Business</div>
+      <div class="mc-desc">Specifically for business owners. Covers business cash, inventory, receivables and payables only.</div>
+      <ul class="mc-feats"><li>Business structure selector</li><li>Inventory valuation method</li><li>Trade receivables and payables</li></ul>
+      <div class="mc-chat-strip">
+        <div class="mc-chat-dot"></div>
+        <div class="mc-chat-text">
+          Includes Zakat chat assistance
+          <span>Get help with business Zakat rulings from our knowledge base</span>
+        </div>
+      </div>
+      <div class="mc-time">~8&ndash;10 minutes</div>
+      <div class="mc-cta">Start business <span>→</span></div>
     </div>
   </div>
 </div>
@@ -1058,8 +1077,10 @@ function startOver() {
   // Reset detailed state
   DS.nisab = 'silver'; DS.sharesMethod = 'simple'; DS.stockMethod = 'cost';
   DS.cryptoTreatment = null; DS.bizType = null; DS.superQ1 = null; DS.superQ2 = null;
+  BS.nisab = 'silver'; BS.stockMethod = 'cost'; BS.bizType = null;
   ['d-bank-items','d-bizcash-items','d-persdebt-items','d-bizdebt-items',
-   'd-gold-items','d-silver-items'].forEach(id => {
+   'd-gold-items','d-silver-items',
+   'b-cash-items','b-debt-items'].forEach(id => {
     const el = document.getElementById(id); if (el) el.innerHTML = '';
   });
   ['savings-items','recv-items','gold-items','silver-items','invest-items','liab-items'].forEach(id => {
@@ -1107,7 +1128,11 @@ function selectMode(mode) {
   const rBizRow = document.getElementById('r-biz-row');
   if (rBizRow) rBizRow.style.display = mode === 'detailed' ? 'flex' : 'none';
 
-  if (mode === 'detailed') { go('sc-d-hawl'); } else { go('sc-nisab'); }
+  // Tag body with current mode so CSS can hide/show mode-specific elements
+  document.body.className = 'mode-' + mode;
+  if (mode === 'detailed') { go('sc-d-hawl'); }
+  else if (mode === 'business') { go('sc-b-nisab'); }
+  else { go('sc-nisab'); }
 }
 
 function goResult() {
@@ -1967,7 +1992,7 @@ function addDeductItem(containerId, type) {
 /* =========================================================
    DETAILED Q&A — shared panel that moves between sidebars
    ========================================================= */
-const DETAILED_SCREENS = ['sc-d-hawl','sc-d-cash','sc-d-gold','sc-d-invest','sc-d-biz','sc-d-deduct'];
+const DETAILED_SCREENS = ['sc-d-hawl','sc-d-cash','sc-d-gold','sc-d-invest','sc-d-biz','sc-d-deduct','sc-b-nisab','sc-b-assets','sc-b-deduct'];
 const DQA_HISTORY = [];
 
 function attachDQAToScreen(screenId) {
@@ -2011,6 +2036,9 @@ function goResult(mode) {
   if (mode === 'detailed') {
     buildDetailedResult();
     go('sc-d-result');
+  } else if (mode === 'business') {
+    buildBusinessResult();
+    go('sc-b-result');
   } else {
     recalc();
     buildResult();
@@ -2211,6 +2239,164 @@ async function generatePDFBase64(mode) {
   return doc.output('datauristring').split(',')[1];
 }
 
+
+/* =========================================================
+   BUSINESS MODE STATE & ENGINE
+   ========================================================= */
+const BS = {
+  nisab: 'silver',
+  stockMethod: 'cost',
+  bizType: null,
+};
+
+function calcBusiness() {
+  const bizSharePct = (gvD('b-biz-share') || 100) / 100;
+  const cash = sumContainerD('b-cash-items');
+  const stock = gvD('b-stock-val') + gvD('b-wip-val');
+  const rec = gvD('b-rec-good') + gvD('b-rec-doubt') * 0.5;
+  const grossAssets = cash + stock + rec;
+  const bizAssets = BS.bizType === 'partner' || BS.bizType === 'company' ? grossAssets * bizSharePct : grossAssets;
+  const debt = sumContainerD('b-debt-items');
+  const debtShare = BS.bizType === 'partner' || BS.bizType === 'company' ? debt * bizSharePct : debt;
+
+  const zakatable = Math.max(0, bizAssets - debtShare);
+  const nisabVal = ST.nisabVals[BS.nisab];
+  const met = nisabVal != null && zakatable >= nisabVal;
+  const zakat = met ? zakatable * 0.025 : 0;
+
+  return { cash, stock, rec, grossAssets, bizAssets, debt: debtShare, zakatable, nisabVal, met, zakat };
+}
+
+function bSet(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
+
+function bRecalc() {
+  const c = calcBusiness();
+  bSet('bev-cash', fmtAUD(c.cash));
+  bSet('bev-stock', fmtAUD(c.stock));
+  bSet('bev-rec', fmtAUD(c.rec));
+  bSet('bev-debt', '-' + fmtAUD(c.debt));
+  bSet('b-sb-cash', fmtAUD(c.cash));
+  bSet('b-sb-stock', fmtAUD(c.stock));
+  bSet('b-sb-rec', fmtAUD(c.rec));
+  bSet('b-sb-assets-total', fmtAUD(c.bizAssets));
+  bSet('b-sb-debt', '-' + fmtAUD(c.debt));
+  bSet('b-sb-gross', fmtAUD(c.bizAssets));
+  bSet('b-sb-less', '-' + fmtAUD(c.debt));
+  ['b-sb-zakat', 'b-sb-zakat-2', 'b-sb-zakat-3'].forEach(id => bSet(id, fmtAUD(c.zakat)));
+  const ns = document.getElementById('b-sb-nisab-status');
+  if (ns) { ns.textContent = c.met ? 'Zakat is obligatory' : 'Not yet reached'; ns.className = 'sb-status ' + (c.met ? 'status-met' : 'status-not-met'); }
+}
+
+function buildBusinessResult() {
+  const c = calcBusiness();
+  bSet('br-amount', fmtAUDf(c.zakat));
+  bSet('br-sub', 'Based on ' + fmtAUDf(c.zakatable) + ' net zakatable wealth');
+  bSet('br-msg', c.met ? 'Alhamdulillah. May your Zakat be accepted and your business blessed.' : 'Your business wealth is below Nisab. Zakat is not yet obligatory this year.');
+  bSet('br-nisab-method', BS.nisab === 'silver' ? 'Silver (595g) — A$2,028.95' : 'Gold (85g) — A$18,514.70');
+  bSet('br-biz-type', BS.bizType ? ({ sole: 'Sole trader', partner: 'Partnership', company: 'Company or trust' }[BS.bizType]) : 'Not specified');
+  bSet('br-stock-method', BS.stockMethod === 'cost' ? 'Cost price' : 'Market value');
+  bSet('br-cash', fmtAUDf(c.cash));
+  bSet('br-stock', fmtAUDf(c.stock));
+  bSet('br-rec', fmtAUDf(c.rec));
+  bSet('br-gross', fmtAUDf(c.bizAssets));
+  bSet('br-deduct', '-' + fmtAUDf(c.debt));
+  bSet('br-zakatable', fmtAUDf(c.zakatable));
+  bSet('br-nisab-val', c.nisabVal != null ? fmtAUDf(c.nisabVal) : 'Not set');
+  bSet('br-nisab-met', c.met ? 'Yes' : 'No');
+  bSet('br-zakat', fmtAUDf(c.zakat));
+}
+
+function setBNisab(type) {
+  BS.nisab = type;
+  ['silver', 'gold'].forEach(t => { const el = document.getElementById('bn-' + t); if (el) el.classList.toggle('sel', t === type); });
+  bSet('b-sb-nisab', type === 'silver' ? 'A$2,028.95' : 'A$18,514.70');
+  bRecalc();
+}
+
+function setBBizType(t) {
+  BS.bizType = t;
+  ['sole', 'partner', 'company'].forEach(id => { const el = document.getElementById('bb-' + id); if (el) el.classList.toggle('sel', id === t); });
+  const wrap = document.getElementById('b-biz-share-wrap');
+  if (wrap) wrap.style.display = (t === 'partner' || t === 'company') ? 'block' : 'none';
+  bRecalc();
+}
+
+function setBStockMethod(m) {
+  BS.stockMethod = m;
+  ['cost', 'market'].forEach(x => { const el = document.getElementById('bm-' + x); if (el) el.classList.toggle('sel', x === m); });
+  const note = document.getElementById('b-sb-stock-method');
+  if (note) note.innerHTML = 'Inventory: <strong>' + (m === 'cost' ? 'Cost price' : 'Market value') + '</strong>';
+  bRecalc();
+}
+
+async function bSendEmail() {
+  const email = document.getElementById('b-save-email').value.trim();
+  if (!email || !email.includes('@')) { bShowSaveMsg('Please enter a valid email address.', 'var(--red)'); return; }
+  bShowSaveMsg('Generating your PDF and sending...', 'var(--grey)');
+  try {
+    const pdfBase64 = await generatePDFBase64('business');
+    const c = calcBusiness();
+    const res = await fetch('/.netlify/functions/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        year: new Date().getFullYear(),
+        pdfBase64: pdfBase64,
+        summary: {
+          zakat: fmtAUDf(c.zakat),
+          cash: fmtAUDf(c.cash),
+          gold: 'A$0.00',
+          invest: 'A$0.00',
+          biz: fmtAUDf(c.bizAssets),
+          liab: fmtAUDf(c.debt),
+          zakatable: fmtAUDf(c.zakatable),
+          nisab: c.nisabVal != null ? fmtAUDf(c.nisabVal) : 'Not set',
+          nisabMet: c.met
+        }
+      })
+    });
+    const result = await res.json();
+    if (result.success) bShowSaveMsg('Sent! Check your inbox for your business Zakat summary.', 'var(--green)');
+    else bShowSaveMsg('Could not send: ' + (result.error || 'unknown error'), 'var(--red)');
+  } catch(e) {
+    bShowSaveMsg('Could not send email. Try the PDF button instead.', 'var(--red)');
+    console.error('Business email send error:', e);
+  }
+}
+
+function bDownloadPDF() {
+  const c = calcBusiness();
+  const yr = new Date().getFullYear();
+  const overlay = document.getElementById('b-print-overlay');
+  overlay.innerHTML = [
+    '<div class="phead"><img src="' + NZF_LOGO + '" alt="NZF"><div><div class="porg">National Zakat Foundation Australia</div><div class="psub">Business Zakat Calculation &mdash; ' + yr + '</div></div></div>',
+    '<div class="pmeta">Nisab: ' + (BS.nisab === 'silver' ? 'Silver A$2,028.95' : 'Gold A$18,514.70') + ' &middot; Structure: ' + (BS.bizType ? ({sole:'Sole trader',partner:'Partnership',company:'Company or trust'}[BS.bizType]) : 'Not set') + ' &middot; Inventory: ' + (BS.stockMethod === 'cost' ? 'Cost price' : 'Market value') + '</div>',
+    '<div class="psec">Business Assets</div>',
+    '<div class="pr"><span>Business cash and bank</span><span>' + fmtAUDf(c.cash) + '</span></div>',
+    '<div class="pr"><span>Trading inventory</span><span>' + fmtAUDf(c.stock) + '</span></div>',
+    '<div class="pr"><span>Receivables (adjusted)</span><span>' + fmtAUDf(c.rec) + '</span></div>',
+    '<div class="pr pr-sub"><span>Gross business assets</span><span>' + fmtAUDf(c.bizAssets) + '</span></div>',
+    '<div class="psec">Deductions</div>',
+    '<div class="pr"><span>Business payables</span><span class="neg">-' + fmtAUDf(c.debt) + '</span></div>',
+    '<div class="psec">Result</div>',
+    '<div class="pr"><span>Net zakatable wealth</span><span>' + fmtAUDf(c.zakatable) + '</span></div>',
+    '<div class="pr pr-zakat"><span>Business Zakat due (2.5%)</span><span>' + fmtAUDf(c.zakat) + '</span></div>',
+    '<div class="pdua"><div class="pdua-arabic">\u0627\u0644\u0644\u0651\u0647\u064f\u0645\u0651 \u0627\u062c\u0652\u0639\u0644\u0652\u0647\u0627 \u0645\u064e\u063a\u0652\u0646\u064e\u0645\u064b\u0627 \u0648\u0644\u0627 \u062a\u064e\u062c\u0652\u0639\u0644\u0652\u0647\u0627 \u0645\u064e\u063a\u0652\u0631\u064e\u0645\u064b\u0627</div><div class="pdua-trans">"O Allah, make it a gain and do not make it a loss."</div></div>',
+    '<div class="pfooter">Pay at nzf.org.au/pay/zakat &middot; 1300 663 729 &middot; 0449 004 663 &middot; DGR registered</div>'
+  ].join('');
+  setTimeout(function() { window.print(); setTimeout(function() { overlay.innerHTML = ''; }, 1500); }, 150);
+}
+
+function bShowSaveMsg(msg, color) {
+  const el = document.getElementById('b-save-msg');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = color || 'var(--green)';
+  el.textContent = msg;
+}
+
+
 document.addEventListener('DOMContentLoaded', async () => {
   // Add initial line items
   addItem('savings-items', 'savings');
@@ -2231,6 +2417,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   addItem('d-bizcash-items', 'd-bizcash');
   addItem('d-persdebt-items', 'd-persdebt');
 
+  // Business mode — seed first items
+  addItem('b-cash-items', 'b-cash');
+  addItem('b-debt-items', 'b-debt');
+
   // Q&A enter key handlers
   document.getElementById('qa-inp')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendQ(); });
   document.getElementById('qa-result-inp')?.addEventListener('keydown', e => { if (e.key === 'Enter') sendResultQ(); });
@@ -2247,10 +2437,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp active"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp active"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 1 of 7: Nisab Threshold</div>
+      <div class="eyebrow">Step 1 of 6: Nisab Threshold</div>
       <h2 class="ph1">Before you begin</h2>
       <p class="plead">Choose your Nisab standard. This is the only setting needed before entering your assets.</p>
 
@@ -2316,10 +2506,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp active"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp active"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 2 of 7: Cash and Savings</div>
+      <div class="eyebrow">Step 2 of 6: Cash and Savings</div>
       <h2 class="ph1">Cash and personal assets</h2>
       <p class="plead">Include all liquid personal wealth as at your Zakat anniversary date. List each account separately.</p>
 
@@ -2392,7 +2582,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-hawl')">&#8592; Back</button>
-    <span class="nav-info">Step 2 of 7: Cash and Savings</span>
+    <span class="nav-info">Step 2 of 6: Cash and Savings</span>
     <button class="btn btn-red" onclick="go('sc-d-gold')">Next: Gold and Silver &#8594;</button>
   </div>
 </div>
@@ -2406,10 +2596,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp active"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp active"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 3 of 7: Gold and Silver</div>
+      <div class="eyebrow">Step 3 of 6: Gold and Silver</div>
       <h2 class="ph1">Gold and silver</h2>
       <p class="plead">Enter each item separately with weight, unit and purity. The AUD value is calculated from today's spot price. Gold and silver jewellery is zakatable under the majority scholarly position.</p>
       <div class="info info-blue" style="margin-bottom:16px;"><strong>Spot prices:</strong> Gold A$217.82/g (24ct) &nbsp;&#183;&nbsp; Silver A$3.41/g &nbsp;&#183;&nbsp; <em style="font-size:11px;">Connect a live metals API in production.</em></div>
@@ -2462,7 +2652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-cash')">&#8592; Back</button>
-    <span class="nav-info">Step 3 of 7: Gold and Silver</span>
+    <span class="nav-info">Step 3 of 6: Gold and Silver</span>
     <button class="btn btn-red" onclick="go('sc-d-invest')">Next: Investments &#8594;</button>
   </div>
 </div>
@@ -2476,10 +2666,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp active"><div class="stp-n">4</div>Investments</div><div class="stp"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp active"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 4 of 7: Investments</div>
+      <div class="eyebrow">Step 4 of 6: Investments</div>
       <h2 class="ph1">Investments</h2>
       <p class="plead">Different asset types have different scholarly treatments. Choose the approach that best fits your situation for each one.</p>
 
@@ -2612,8 +2802,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-gold')">&#8592; Back</button>
-    <span class="nav-info">Step 4 of 7: Investments</span>
-    <button class="btn btn-red" onclick="go('sc-d-biz')">Next: Business Assets &#8594;</button>
+    <span class="nav-info">Step 4 of 6: Investments</span>
+    <button class="btn btn-red" onclick="go('sc-d-deduct')">Next: Deductions &#8594;</button>
   </div>
 </div>
 
@@ -2626,7 +2816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp done"><div class="stp-n">4</div>Investments</div><div class="stp active"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp done"><div class="stp-n">4</div>Investments</div><div class="stp stp-business active"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
       <div class="eyebrow">Step 5 of 7: Business Assets</div>
@@ -2727,10 +2917,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     </a>
     <div class="hdr-right"><span class="mode-badge">Detailed</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
   </header>
-  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp done"><div class="stp-n">4</div>Investments</div><div class="stp done"><div class="stp-n">5</div>Business</div><div class="stp active"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp done"><div class="stp-n">4</div>Investments</div><div class="stp stp-business done"><div class="stp-n">5</div>Business</div><div class="stp active"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 6 of 7: Deductions</div>
+      <div class="eyebrow">Step 5 of 6: Deductions</div>
       <h2 class="ph1">Deductions and liabilities</h2>
       <p class="plead">Only debts that are due right now can be deducted. Long-term loans like a mortgage cannot be deducted in full — only the current instalment may qualify.</p>
       <div class="info info-red"><strong>Core rule:</strong> Only debts payable within this lunar month can be deducted. A 30-year mortgage cannot be deducted in full. Only this month's repayment instalment qualifies.</div>
@@ -2796,8 +2986,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>
   <div class="nav-bar">
-    <button class="btn btn-outline" onclick="go('sc-d-biz')">&#8592; Back</button>
-    <span class="nav-info">Step 6 of 7: Deductions</span>
+    <button class="btn btn-outline" onclick="go('sc-d-invest')">&#8592; Back</button>
+    <span class="nav-info">Step 5 of 6: Deductions</span>
     <button class="btn btn-green" onclick="goResult('detailed')">View my report &#8594;</button>
   </div>
 </div>
@@ -2917,6 +3107,330 @@ document.addEventListener('DOMContentLoaded', async () => {
       <div class="qa-source-note" style="padding:0 10px 6px;font-size:10px;">Our knowledge base only. Not answered? Call us on 1300 663 729</div>
     </div>
   </div>
+</div>
+
+<!-- ==================== BUSINESS: STEP 1 - NISAB ==================== -->
+<div id="sc-b-nisab" class="screen">
+  <header class="hdr">
+    <a href="#" class="logo" onclick="go('sc-mode');return false;">
+      <img src="data:image/png;base64,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" alt="NZF" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+      <div><div class="logo-name">National Zakat Foundation</div><div class="logo-sub">Australia</div></div>
+    </a>
+    <div class="hdr-right"><span class="mode-badge">Business</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
+  </header>
+  <div class="d-step-rail"><div class="stp active"><div class="stp-n">1</div>Nisab</div><div class="stp"><div class="stp-n">2</div>Business Assets</div><div class="stp"><div class="stp-n">3</div>Deductions</div><div class="stp"><div class="stp-n">4</div>Result</div></div>
+  <div class="layout">
+    <div class="main fade-in">
+      <div class="eyebrow">Step 1 of 4: Nisab Threshold</div>
+      <h2 class="ph1">Business Zakat setup</h2>
+      <p class="plead">This calculator is focused on business assets only. Choose your Nisab standard to begin.</p>
+
+      <div class="info info-green">
+        <strong>Before you begin:</strong> Business Zakat is calculated on liquid business assets only, not fixed assets. This includes business cash and bank balances, trading inventory, and expected receivables. It excludes equipment, vehicles, property used in the business, and intangibles like goodwill.
+      </div>
+
+      <div class="info info-yellow" style="margin-top:4px;">
+        <strong>If you're a sole trader,</strong> your business and personal wealth may be calculated together. Use the Detailed calculator instead and include business cash in your personal totals. This Business calculator is best for partnerships, companies, or sole traders who wish to calculate business separately.
+      </div>
+
+      <div class="ex open" id="bx-nisab">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#9878;</span><span class="ex-label">Nisab threshold</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="info info-blue">We recommend the <strong>Silver Nisab</strong> for business assets as it benefits more recipients.</div>
+          <div class="nisab-grid">
+            <div class="n-opt sel" id="bn-silver" onclick="setBNisab('silver')">
+              <div class="n-radio"><div class="n-ring"></div><span class="n-label">Silver Nisab</span></div>
+              <div class="n-name">Silver</div><div class="n-weight">595 grams</div>
+              <div class="n-val">A$2,028.95</div><div class="n-note">Current NZF value</div>
+              <span class="n-rec">Scholars recommend</span>
+            </div>
+            <div class="n-opt" id="bn-gold" onclick="setBNisab('gold')">
+              <div class="n-radio"><div class="n-ring"></div><span class="n-label">Gold Nisab</span></div>
+              <div class="n-name">Gold</div><div class="n-weight">85 grams</div>
+              <div class="n-val">A$18,514.70</div><div class="n-note">Current NZF value</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar">
+      <div class="sb-h">Business Zakat</div><div class="sb-s">Builds as you progress</div>
+      <div class="sb-nisab"><div class="sb-nisab-label">Nisab threshold</div><div class="sb-nisab-val" id="b-sb-nisab">A$2,028.95</div><span class="sb-status status-not-met" id="b-sb-nisab-status">Not yet assessed</span></div>
+      <div class="sb-box" style="margin-top:14px;"><div class="sb-box-label">Estimated Zakat</div><div class="sb-box-amount" id="b-sb-zakat">A$0</div><div class="sb-box-rate">2.5% of zakatable wealth</div><button class="sb-pay-btn" onclick="goResult('business')">See full report &#8594;</button></div>
+      <div class="help-strip">
+        <div class="help-strip-title">Need some help?</div>
+        <div class="help-strip-desc">Speak directly with our Zakat experts.</div>
+        <div class="help-strip-actions">
+          <a class="help-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScYTmR3bOntJ8-ocUk0YACYP7EM8jQSdcFGWl0aL0HfLD41XA/viewform" target="_blank" rel="noopener">
+            <span class="help-btn-icon">&#128197;</span>Book a consultation
+          </a>
+          <a class="help-btn" href="tel:0449004663">
+            <span class="help-btn-icon">&#128222;</span>0449 004 663
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-bar">
+    <button class="btn btn-outline" onclick="go('sc-mode')">&#8592; Back to modes</button>
+    <span class="nav-info">Step 1 of 4: Nisab</span>
+    <button class="btn btn-red" onclick="go('sc-b-assets')">Next: Business Assets &#8594;</button>
+  </div>
+</div>
+
+<!-- ==================== BUSINESS: STEP 2 - ASSETS ==================== -->
+<div id="sc-b-assets" class="screen">
+  <header class="hdr">
+    <a href="#" class="logo" onclick="go('sc-mode');return false;">
+      <img src="data:image/png;base64,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" alt="NZF" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+      <div><div class="logo-name">National Zakat Foundation</div><div class="logo-sub">Australia</div></div>
+    </a>
+    <div class="hdr-right"><span class="mode-badge">Business</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
+  </header>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Nisab</div><div class="stp active"><div class="stp-n">2</div>Business Assets</div><div class="stp"><div class="stp-n">3</div>Deductions</div><div class="stp"><div class="stp-n">4</div>Result</div></div>
+  <div class="layout">
+    <div class="main fade-in">
+      <div class="eyebrow">Step 2 of 4: Business Assets</div>
+      <h2 class="ph1">Business assets</h2>
+      <p class="plead">Enter values as at your business Zakat anniversary date. Only liquid business assets are included.</p>
+
+      <!-- Business Structure -->
+      <div class="ex open" id="bx-biztype">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#127970;</span><span class="ex-label">Business structure</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="biz-type-grid">
+            <div class="method-card" id="bb-sole" onclick="setBBizType('sole')"><div class="mc-title">Sole trader</div><div class="mc-desc">Business and personal wealth together. Include your full business cash.</div></div>
+            <div class="method-card" id="bb-partner" onclick="setBBizType('partner')"><div class="mc-title">Partnership</div><div class="mc-desc">Each partner pays Zakat on their share of zakatable business assets.</div></div>
+            <div class="method-card" id="bb-company" onclick="setBBizType('company')"><div class="mc-title">Company or trust</div><div class="mc-desc">Zakat on your proportional share of the company's zakatable assets.</div></div>
+          </div>
+          <div id="b-biz-share-wrap" style="display:none;">
+            <div class="info info-blue"><strong>Partnership or company share:</strong> Enter your ownership percentage below.</div>
+            <div class="field" style="max-width:180px;"><div class="flabel">Your share (%)</div><div class="fw"><span class="pfx">%</span><input type="number" class="inp" id="b-biz-share" placeholder="50" value="50" oninput="bRecalc()" min="1" max="100"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cash -->
+      <div class="ex open" id="bx-cash">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#128176;</span><span class="ex-label">Business cash and bank balances</span><span class="ex-val" id="bev-cash">A$0</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="info info-green">All business cash on your anniversary date is 100% zakatable, including earmarked funds for upcoming expenses.</div>
+          <div style="display:grid;grid-template-columns:1fr 140px 28px;gap:6px;padding:0 10px;margin-bottom:4px;"><span class="li-col-label">Account / description</span><span class="li-col-label">Balance (A$)</span><span></span></div>
+          <div class="line-items" id="b-cash-items"></div>
+          <button class="btn-add-item" onclick="addItem('b-cash-items','b-cash')">+ Add business account</button>
+          <div class="li-total" id="b-cash-total">Total: <span>A$0</span></div>
+        </div>
+      </div>
+
+      <!-- Inventory -->
+      <div class="ex" id="bx-stock">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#128230;</span><span class="ex-label">Trading inventory and stock</span><span class="ex-val" id="bev-stock">A$0</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="sec-h">Inventory valuation method</div>
+          <div class="sec-sub" style="margin-bottom:12px;">Scholars differ on whether to value at cost or market price</div>
+          <div class="method-cards" style="margin-bottom:14px;">
+            <div class="method-card sel" id="bm-cost" onclick="setBStockMethod('cost')"><div class="mc-title">Cost price</div><div class="mc-desc">Value at what you paid for it. More conservative. Preferred by Hanafi scholars.</div><span class="cc-tag tag-red" style="margin-top:8px;">Conservative</span></div>
+            <div class="method-card" id="bm-market" onclick="setBStockMethod('market')"><div class="mc-title">Market value</div><div class="mc-desc">Value at current selling price. Preferred by Shafi'i and Maliki scholars.</div><span class="cc-tag tag-blue" style="margin-top:8px;">Market-based</span></div>
+          </div>
+          <div class="two-col">
+            <div class="field"><div class="flabel">Total inventory value (AUD)<div class="hint-btn">?<div class="tt">Do not include raw materials, work-in-progress, or fixed equipment.</div></div></div><div class="fw"><span class="pfx">$</span><input type="number" class="inp" id="b-stock-val" placeholder="0.00" oninput="bRecalc()" min="0"></div></div>
+            <div class="field"><div class="flabel">Work in progress (WIP)</div><div class="fw"><span class="pfx">$</span><input type="number" class="inp" id="b-wip-val" placeholder="0.00" oninput="bRecalc()" min="0"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Receivables -->
+      <div class="ex" id="bx-rec">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#129534;</span><span class="ex-label">Business receivables (accounts receivable)</span><span class="ex-val" id="bev-rec">A$0</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="info info-yellow">Apply the three-tier classification. Check your A/R aging report: invoices 60+ days overdue may be doubtful; 90+ days likely bad.</div>
+          <div class="tier-grid">
+            <div class="field"><div class="flabel tier-label-good">Good (current)</div><div class="fw"><span class="pfx">$</span><input type="number" class="inp" id="b-rec-good" placeholder="0.00" oninput="bRecalc()" min="0"></div><div class="fnote ok">100% zakatable</div></div>
+            <div class="field"><div class="flabel tier-label-doubt">Doubtful (60-90 days)</div><div class="fw"><span class="pfx">$</span><input type="number" class="inp" id="b-rec-doubt" placeholder="0.00" oninput="bRecalc()" min="0"></div><div class="fnote warn">50% zakatable</div></div>
+            <div class="field"><div class="flabel tier-label-bad">Bad (90+ days)</div><div class="fw"><span class="pfx">$</span><input type="number" class="inp" id="b-rec-bad" placeholder="0.00" min="0" style="opacity:.55;"></div><div class="fnote" style="color:var(--mid-grey)">0% exempt</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info info-red" style="margin-top:4px;">
+        <strong>Not zakatable in this calculator:</strong> Fixed assets (equipment, vehicles, computers, office furniture, land, buildings), intellectual property, goodwill, brand value, and prepaid expenses for future use.
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sb-h">Business Assets</div><div class="sb-s">Running total</div>
+      <div class="sb-cat"><span class="sb-cat-l"><span class="sb-dot" style="background:var(--blue)"></span>Cash and bank</span><span class="sb-cat-v" id="b-sb-cash">A$0</span></div>
+      <div class="sb-cat"><span class="sb-cat-l"><span class="sb-dot" style="background:var(--yellow)"></span>Inventory</span><span class="sb-cat-v" id="b-sb-stock">A$0</span></div>
+      <div class="sb-cat"><span class="sb-cat-l"><span class="sb-dot" style="background:var(--green)"></span>Receivables</span><span class="sb-cat-v" id="b-sb-rec">A$0</span></div>
+      <div class="sb-divider"></div>
+      <div class="sb-zakat-row"><span class="sb-zakat-label">Assets total</span><span class="sb-zakat-val" id="b-sb-assets-total">A$0</span></div>
+      <div style="font-size:11px;color:var(--mid-grey);margin-top:8px;" id="b-sb-stock-method">Inventory: <strong>Cost price</strong></div>
+      <div class="sb-box" style="margin-top:10px;"><div class="sb-box-label">Zakat so far</div><div class="sb-box-amount" id="b-sb-zakat-2">A$0</div><div class="sb-box-rate">2.5% of zakatable wealth</div></div>
+      <div class="help-strip">
+        <div class="help-strip-title">Need some help?</div>
+        <div class="help-strip-desc">Speak directly with our Zakat experts.</div>
+        <div class="help-strip-actions">
+          <a class="help-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScYTmR3bOntJ8-ocUk0YACYP7EM8jQSdcFGWl0aL0HfLD41XA/viewform" target="_blank" rel="noopener">
+            <span class="help-btn-icon">&#128197;</span>Book a consultation
+          </a>
+          <a class="help-btn" href="tel:0449004663">
+            <span class="help-btn-icon">&#128222;</span>0449 004 663
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-bar">
+    <button class="btn btn-outline" onclick="go('sc-b-nisab')">&#8592; Back</button>
+    <span class="nav-info">Step 2 of 4: Business Assets</span>
+    <button class="btn btn-red" onclick="go('sc-b-deduct')">Next: Deductions &#8594;</button>
+  </div>
+</div>
+
+<!-- ==================== BUSINESS: STEP 3 - DEDUCTIONS ==================== -->
+<div id="sc-b-deduct" class="screen">
+  <header class="hdr">
+    <a href="#" class="logo" onclick="go('sc-mode');return false;">
+      <img src="data:image/png;base64,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" alt="NZF" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+      <div><div class="logo-name">National Zakat Foundation</div><div class="logo-sub">Australia</div></div>
+    </a>
+    <div class="hdr-right"><span class="mode-badge">Business</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
+  </header>
+  <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Nisab</div><div class="stp done"><div class="stp-n">2</div>Business Assets</div><div class="stp active"><div class="stp-n">3</div>Deductions</div><div class="stp"><div class="stp-n">4</div>Result</div></div>
+  <div class="layout">
+    <div class="main fade-in">
+      <div class="eyebrow">Step 3 of 4: Business Deductions</div>
+      <h2 class="ph1">Business trade payables</h2>
+      <p class="plead">Only trade payables due right now can be deducted. Long-term business loans are not deductible.</p>
+      <div class="info info-red"><strong>Core rule:</strong> Only payables due within this lunar month can be deducted. Future obligations and long-term debt balances do not qualify.</div>
+
+      <div class="ex open" id="bx-debt">
+        <div class="ex-hdr" onclick="this.parentElement.classList.toggle('open')"><span class="ex-icon">&#127970;</span><span class="ex-label">Immediately due business payables</span><span class="ex-val" id="bev-debt" style="color:var(--dark-red)">-A$0</span><span class="ex-chev">&#9660;</span></div>
+        <div class="ex-body">
+          <div class="info info-yellow">Supplier invoices overdue, ATO obligations, employee wages payable, and similar immediate debts.</div>
+          <div style="display:grid;grid-template-columns:1fr 140px 28px;gap:6px;padding:0 10px;margin-bottom:4px;"><span class="li-col-label">Payable description</span><span class="li-col-label">Amount due (A$)</span><span></span></div>
+          <div class="line-items" id="b-debt-items"></div>
+          <button class="btn-add-item" onclick="addDeductItem('b-debt-items','b-debt')">+ Add business payable</button>
+          <div class="li-total" id="b-debt-total">Total: <span>A$0</span></div>
+          <div class="fnote" style="margin-top:6px;">Examples: supplier invoices overdue, ATO / GST / BAS due, employee wages payable, rent due on business premises</div>
+        </div>
+      </div>
+
+      <div class="excl-list">
+        <div class="excl-list-title">&#10060; Not deductible</div>
+        <div class="excl-grid">
+          <span>Long-term business loans</span><span>Equipment finance balance</span>
+          <span>Commercial mortgage balance</span><span>Future supplier obligations</span>
+          <span>Lease payments beyond this month</span><span>Deferred tax liabilities</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sb-h">Deductions</div><div class="sb-s">Immediately due only</div>
+      <div class="sb-cat"><span class="sb-cat-l"><span class="sb-dot" style="background:var(--dark-red)"></span>Business payables</span><span class="sb-cat-v neg" id="b-sb-debt">-A$0</span></div>
+      <div class="sb-divider"></div>
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--mid-grey);margin-bottom:2px;">Assets total</div>
+        <div style="font-size:15px;font-weight:700;" id="b-sb-gross">A$0</div>
+        <div style="font-size:11px;color:var(--mid-grey);margin-top:8px;margin-bottom:2px;">Less deductions</div>
+        <div style="font-size:13px;font-weight:700;color:var(--dark-red);" id="b-sb-less">-A$0</div>
+      </div>
+      <div class="sb-box" style="margin-top:12px;"><div class="sb-box-label">Business Zakat due</div><div class="sb-box-amount" id="b-sb-zakat-3">A$0</div><div class="sb-box-rate">2.5% of net zakatable wealth</div><button class="sb-pay-btn" onclick="goResult('business')">View full report &#8594;</button></div>
+      <div class="help-strip">
+        <div class="help-strip-title">Need some help?</div>
+        <div class="help-strip-desc">Speak directly with our Zakat experts.</div>
+        <div class="help-strip-actions">
+          <a class="help-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScYTmR3bOntJ8-ocUk0YACYP7EM8jQSdcFGWl0aL0HfLD41XA/viewform" target="_blank" rel="noopener">
+            <span class="help-btn-icon">&#128197;</span>Book a consultation
+          </a>
+          <a class="help-btn" href="tel:0449004663">
+            <span class="help-btn-icon">&#128222;</span>0449 004 663
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="nav-bar">
+    <button class="btn btn-outline" onclick="go('sc-b-assets')">&#8592; Back</button>
+    <span class="nav-info">Step 3 of 4: Deductions</span>
+    <button class="btn btn-green" onclick="goResult('business')">View my report &#8594;</button>
+  </div>
+</div>
+
+<!-- ==================== BUSINESS: STEP 4 - RESULT ==================== -->
+<div id="sc-b-result" class="screen">
+  <header class="hdr">
+    <a href="#" class="logo" onclick="go('sc-mode');return false;">
+      <img src="data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADhAOEDASIAAhEBAxEB/8QAHAABAQADAQEBAQAAAAAAAAAAAAgFBgcEAwIB/8QASxAAAQQBAgIFBwYLBwEJAAAAAQACAwQFBhEHIRIxQVFxCBMUImGBkTJCkqGxwRcjUlNUVmKCk6LSFRZystHh8EMkJTQ1REVjlML/xAAbAQEAAgMBAQAAAAAAAAAAAAAABQYDBAcCAf/EADkRAAIBAgIGBggFBQEAAAAAAAABAgMEBREGEiExQVETYXGhsdEUIiMygZHB4RUWQlJTM2Ki8PHi/9oADAMBAAIRAxEAPwCy0REAREQBERAEREARY/OZrE4Om65lshXpQAfKleBv4DrPuXJ9VcfsPV6cOncbNkJByE0/4qL3D5R+pYqlenS95m/ZYXd3z9hTb6+Hzew7QvnPPBAzpzzRxN73uAH1qTdQ8X9dZclrcoMdEd/UpMEZ+lzd9a0rIZC/kHl9+9ZtuPMmaVz/ALStGeJxXuxzLTbaEXElnWqKPYs/Isu9rbSNFxba1Jio3DkW+ktLh7gd1jX8UtAMOztT0vcHn7Ao8RYHidTgkScNB7Ve9Uk/kvoywmcU+H73bN1RT39oePuXvpa80bccG19T4pzj1NNlrSfcSFFyIsTqcUj7LQe0a9WpJfLyReFa1Wss6dexDM3vjeHD6l9VCNO5cpPD6duxWcDuDDKWHf3FbngOLOu8R0WtzT7sQ+ZcaJf5j631rPDE4v3o5EZcaD14rOjVT7Vl5ldouI6X8oDHzFkOo8TLUceRnqnzjPEtPMe7ddZ07qLCahq+k4bJ17jO0Ru9Zvi3rHvC3aVxTq+6yr3uE3lj/XptLnvXzWwyqIizEcEREAREQBERAEREAREQBERAERatxD1zhdFY30jIy+csyA+j1IyPOSn7m+0rzKSgs5PYZaFCpcVFTpLOT4Gw5G9Tx1OW5fsxVq8Q3fLI4Na0eJXDeIXHfoukoaOrtdtu116w3l4sZ95+C5Zr7XWe1neM2TsebqtdvDUiJEUfdy7T7StXUPcYhKWynsR0fCNEKVFKpeetLlwXn4dp7czlsnmbrruWv2Lth3W+Z5cR4dgHsC8SIo5vPay6RjGEVGKySCIiHoIiIAiIgCIiAL042/exltlzHXJ6lhh3bJC8tcPgvMibjzKKksms0dw4fcdrdcx0dXw+kxdXpsDNnj2uaOR923gV3jC5bHZrHx38Xcht1pB6skTtx4HuPsKhdbBonWGc0hkxcw9ota4/jq7+cUo7nD7xzUhb38obJ7V3lPxfRGhcJ1LX1Jcv0vy8OotVFpfDLiJhtbUyK7vRclE0efpvd6w/aafnN9vxW6KZhOM1rRew5tcW1W2qOlVjlJcAiIvRgCIiAIiIAiIgCItW4mayo6L05JkbHRksybsqQb85ZNv8o6yV5lJQWs9xloUKlxUjSprOT2JHh4r8QsfojFDk2zlJwfRq2/8AO7uaPrUoZ/MZHPZafKZW0+zamdu5zj1DsAHYB2Bf3UGYyOfy8+Vyth09qd273HqHcAOwDsCx6r9zcyry6jr+B4HSwylzqPe/ourxCIi1ieCIiAIiIAiIgCIiAIiIAiIgCIiA9OLv3cXkIchjrMla1A7pRyxnYtP/ADsVTcG+JdXWVIUL/m6+bhZvJGDs2YD57PvHZ4KUF6cZet4zIQZChYkr2oHh8UjDsWkLYt7mVCWa3ELjWC0cUpZS2TW5/R9RdiLSOEOvK2tsCHvLIspWAbbgB7ex7f2T9R5Ld1YYTjOKlHcceubapa1ZUaqykgiIvRgCIiAIiIDz5O7VxuPsX7szYa1eMySyO6mtA3JUdcTtX2tZ6pmykvTjqs/F1ISeUcYPL3nrP+y6n5T+sXN8zo+hLt0g2e8Wnnt8xn/6PuXBFC4hca0ujW5HTdEMIVGl6ZUXrS3dS+/h2hERRxdQiIgM9pvR2ptR1pbOExE92GJ/Qe9haAHbb7cyFlfwWcQP1ZtfxI/6l2PyVZon6GvwDnJFfcX+BY3Zdf2HcpShYQqU1Jt7Tn+KaWXdnd1KEIRyi8tuefiR7+CziB+rNr+JH/Un4LOIH6s2v4kf9SsLYdybDuWX8Mp82aH53vf449/mR7+CziB+rNr+JH/Un4LOIH6s2v4kf9SsLYdybDuT8Mp82Pzve/xx7/Mj38FnED9WbX8SP+pPwWcQP1ZtfxI/6lYWw7k2Hcn4ZT5sfne9/jj3+ZHv4LOIH6s2v4kf9Sfgs4gfqza/iR/1Kwth3JsO5PwynzY/O97/ABx7/Mja9w311SrPsWNM3hGwbuLA15A8Gklao4Fri1wIIOxB7FemymzyoNOUsZqChmqUTYnZFrxYa0bAyN29fbvIPPwWtdWSpQ14sm8C0pnf3Ct68Em9zWfDbtzzOOoiKPLoEREBm9Ealv6T1JWzNBxJidtLHvyljPymnxH17KytOZilnsJUy2PlElezGHtPaO8H2g8ioaXZ/Jm1kcfmH6Tuy/8AZrpL6hcfkTdrf3h9Y9q37C41J6j3PxKfpbhCuaHpVNevDf1x+2/5lHIiKcOWhERAFj9R5Wtg8Fdy9twbDUhdK727DkPedh71kFxfyqM/6Lp+hp6GTaS7L56Zo/Ns6vi4j6KxV6nRU3IkMLsnfXdOhze3s3vuJ/zuTtZnM3Mtdd0rFuZ0rz3Enq8ANh7l4kRVlvPazuEYqEVGKySCIiHoIiIDpfk/azraV1RLTyc3msdkg1j5HH1YpG/Jce4cyCfaFUbLlR7Q5lqBzSNwRICCoRX6bI9oDWvcAOwFbtveyox1cs0VXGNFqeI1+njPVb37M8+9F3ek1v0iL6YT0mt+kRfTChLzsv5x/wBIp52X84/6RWf8Tf7e/wCxEfkVfz/4/cu30mt+kRfTCek1v0iL6YUJedl/OP8ApFPOy/nH/SKfib/b3/YfkVfz/wCP3Lt9JrfpEX0wnpNb9Ii+mFCXnZfzj/pFbvwi0Td1tqARzGZmJrEOuShxG47Iwe8/UF6hiMpyUYw29v2MF1odStaUq1W4yiv7f/RXTXNc0OaQQeogr+r40q0FKnDUqxNighYGRsaNg0DqC+ylUUZ5Z7D+SPaxjnvcGtaN3EnYAd6k/jvrWHV2p2Q0CDjsd0ooX/nXE+s/w5AD2eK3jyieIxb5zR+EnLXdWQnYer/4gf8AN8O9cDUNf3Os+jju4nR9EsDdJK9rLa/dXJPj8eHUERFGl6CIiAL61LE9S3DbrSGOeCRskbx1tcDuCvkiHxpNZMtnQefh1PpPH5qIjeeIedaPmyDk4e4grOLgnkpZ875TTU0nLlbrtJ/deB/Kfiu9qyW1XpaakcSxmx9BvZ0VuzzXY9q8giIs5FhSRx+zJy/E3INad4qPRqR/uj1v5ifgqzsytgrSzv8AkxsLz4AbqGMtcdkMrbvvcXOszvmJP7TifvUZic8oKPMvGhFspXFSs/0pL5/8PKiIoc6UEREAREQBERAEREARF6MbSt5K/BQowPnszvDIo2jm5xQ+Sais3uMnorTWR1ZqGDD41m75DvJIfkxMHW4/85qwtG6cx2lsBXw+Nj6MUQ9Z5HrSPPW53tJWD4S6GqaK082EtZJk7ADrk47T2NH7I/3W6Kds7Xoo60t7OS6SY48Rq9HSfs47ut8/ILmfHLiIzSWKOLxsgOatsPmyOfo7Orpn293xWxcTdZ0dF6dkv2C2S3ICypX35yv2+wdpUg5zKXs1lrGUyU7p7Vh5dI8/YB2Ady83t10a1I7/AAM+jGA+m1PSKy9nH/J+S4/LmeSR75JHSSPc97iS5zjuST1klflEUIdTCIiH0IiIAiIgNs4RZg4PiLh7peWRPnEEp/Yf6p+0H3KyVBbXvjcJI3Fr2EOaR2EcwVcmm7zcpp/HZJpBFqrHNyPL1mg/epbDJ7JROdacWyU6VdcU0/htXizIIiKVKEa9xJtuo6Bztph2cyhN0T3OLSB9ZUVqwuNzizhXn3D9G2+L2hR6oXE37RLqOl6DwStakucvBLzCIiji7hERAEREAREQBFs3C7B1NSa9xWHvvLas8jjKAdi4NY53RB9vR2VTQ8O9ERRNjZpnG9Fo2G8QJ+JW1b2k66bTK/i+kVDC6kaU4ttrPZluI0AJOwBJPUANyVTXAPhyNOUW6hy8X/e9qP8AFxuH/hoz2f4j293V3reKuhtH1rEdmDTmNjlicHseIBu1w5ghbEpC2seilrTefIpuN6VO/o9BQi4p78976uzmFjtR5mhp/DWctk5xDWrs6Ties9wHeT1ALIrwZrD4vNVW1ctSguQNcHiOVvSb0h1HZb8s8nq7yp0uj110merxy35EecQ9W5DWWo5crdJZEPUrQb+rDH2Ae09ZPetcXZ/KR0ZgdPw4zKYWnHRdZlfDNFFyY7YbhwHYev4hcYVbrwlCo1N5s7Xg9zQubOE7eOrHclyy2BERYiTCIiAIiIAiIgCsHgdZNrhXgnnbdkBiP7riB9QCj5Vf5N7y/hNjieyadvX3SuUhhr9q11FO02gnYwlykvBnRkRFNnLjTONzS/hVqADr9GH+dqj1WjxQquucPM/XaN3OoSlo7yGkj7FFwII3B3ChcTXtE+o6ZoPJO0qR/u+i8giIo4uwREQBERAEREB6cXfuYvIwZGhO6C1XeHxSN62uCorgxrTX2tMiZLsWNjxFblPYbWcHyu/Iaeltv2nlyC4jw60hkNZ6hjxlNpZC3Z9mfblCzv8AE9QCr/TeFx+n8LWxGLgENWuzotaOsntcT2knmSpHD6VST1s8o+JRtML61pwVHUUqr4/tXm+HzMihRcp4+cRP7tYw4LEzD+2LbPWcOutGfnf4j2fHuUtVqxpRcpFBsbKre140KS2vu62YfivxntYTUJw+l46Vg1t225pmF7en+Q3Yjq7T3rTvw862/R8N/wDWf/WuVEkkkkkk7kntX8UDO8qyk3nkdZttG8Po0owlTUmuL3s2TXOtc9rK3DPmp4y2AEQxRM6DGb9ZA58zy5nuWtoi15Scnm2TNGjToQVOnFKK4IIiL4ZQiIgCIiAIiIAqu8m9vR4T48d805+MrlKKr/gXWNXhXg2HrfC6Q8tvlPcVIYavat9RTtNppWEI85LwZuyIimzlx8rsDbNOau/5MsbmHwI2ULZCs6lkLNN4IdXlfEQevdpI+5XcpD474j+yOJ+Va1vRitvFuP8AfG7v5ukozE4ZxjLkXnQe4Ua9Wi/1JP5f9NGREUOdJCIiAIiIAvfp/EX89mK2JxkDprVh/RYADsO9xPYAOZK8cMck0zIYWOkkkcGsY0blxJ2AA71VfBHh5Fo/D+nX42uzVtg8+7r8y3r820/ae0rYtrd155cOJC43jFPDLfXe2b91fXsRsHDXR9HRem4sZWIlsO2fasbbGWTbmfDuC2dFjtSZnH6fwtnL5OcQ1a7ek49p7gB2knkArAlGnHJbEjj1SpWu6zlL1pyfzbMHxS1pT0VpyS7KWyXZQWU4N+cj+8/sjrP+6kLL5G7lsnYyWQndPasPL5ZHdZP+nsWX4hasv6x1HNlbpLY/kV4d+UUY6gPb2k9611QN1cutLZuR1rR7BY4ZQzn/AFJb+rqXZ4hERapYQiL6VoJbNmKtA0vlleGMb3uJ2A+KHxtJZs+uPoXshN5ihSs25dt+hBE57vgAv5epXaM3mb1OxVk/ImiLD8CFZHDnSWP0hpuvjqsLPSOiHWp9vWlkPWSe7sHsC9estNYvVOFmxmUrska9p83Jt60TuxzT2EKTWGy1M89pRZab01caqp+zz357e3L6ESIvRkar6OQs0pCHPrzPicR2lpIP2LzqML0mpLNBERD6EREA2ceTGlzjyAHWSri0rQGL0zjMcP8A01SOI+LWgFSHwtxDs3xAw1Do9KM2WyS+xjPWP2Kz1LYZDZKRzvTm4TlSoLhm38di8GERFKlBC4h5VeAM+Kxuo4WburPNacgfMdzafc4bfvLt6xWrsLX1Fpu/hrQBjtQlgJ+a7ra73EA+5Ybil0tNxJHCb30G8p1+Ce3sex9xD6L05SjYxmSs463GY7FaV0UjT2OB2XmVa3Hb4yUkmtzCIiHoIi+kHQ8/H53bodIdLfu35ofHsKC8njhyKdeLV2bgHpMrelQhcOcbD/1D7SOruHiu3r4Y51d1Cu6r0fMGJpi6PV0dhtt7tl91ZaFKNKCijhuJ39W/uJVqvwXJcgtH4s6Ck11Rr125uegK5L2xCMPie7vcOR3Hj29S3hF7nCNSOrLca9tc1LWqqtJ5SW7/AFkqai4K63xZc6pVgysQ6nVpAHH912x+1aFlMVlMXKY8njblJzTsRPC5nPxIV0L5zwQzsMc8McrDyLXtDgfcVHzw2D915FvtdNrmGyvTUuzY/qu4g5FZuU4eaIyRc63pnHFzuZdHF5tx97Nlim8H+H4l6Zwe4/JNiTb7VrvDavBomIab2bXrU5J/B/UkhjXPe2NjS57js1rRuSe4Bd24D8Lb8GTg1TqOq6s2H16VWQeuXdj3Ds26wOvfmuxYHSGl8E7p4jBUKkn5xkI6f0jz+tZxbNDD1CSlN5kLi+l87qk6NvHVT3t78vp3hePN5CvicRbydpwbBVhdK8k9jRuvYuBeUpryGeP+52KnD9nh2QkYdwCDuIt/HmfABbdxWVGDkyu4Th08Quo0Y7uL5Lj/ALzOHZCy+5fsXJN+nPK6V2/e4k/evgiKtnb0klkgiIh9CIv3DFJNMyGFjnySODGNA5uJOwCHxvI7f5KmnzJfyWpZWerC30SAkfOOznke4NHvVBrW+GmnGaV0Xj8OGgTMj6dgj50rubj8eXuWyKx21LoqSjxOKY3fenX06q3bl2Lz3hERbBEhERAT15TujvRr0Wr6MX4qx0YbvRHU8cmv945eIHeuHq6M5jKeZxFrF5CES1rMZjkae4/eOtRvxA0td0hqaxh7gLmtPTgl25SxnqcPsPtBUJf2+pLpFufidQ0RxdXFD0Wo/Whu64/bwyNfREUeXIIiIDqnDfjNldMY2HEZKmMpQhAbCen0ZY2/k79Th48/asjrnjtkMrjpKGnce/GCUFsliV4dKB29EDkD7VxpFnV1VUdTW2ENPR/Dp1+ndJa2/jln2bjdtPcVddYQtbFm5LkIG3mrrfPD4n1vrXR9P+UIx3RZnsAWHqMlOTpDx6Lv9SuBIlO6q090j7d4Bh91tnSWfNbH3fUr7A8VtC5fotjzkVWVx283baYj8TyPxW41LdW5F52pZhsR/lRPDx8QoQX3p3LdN4fTtT13jqdFIWEe8LbhiU17yzK7caD0ZbaNVrtWfkXcCijGjxB1vRaG1tUZINHzXy9MfzArJt4t8QA3o/2+8+MMe/8AlWdYnDjFkXPQi8T9WpF/PyK7JWOzmdw2DrGxl8lVox9hmkDSfAdZ9ykW/wARtc3mOZY1PkOg4bFsbxH/AJQCtatWbFuYzWp5Z5T1vleXOPvK8TxNZerH5mzb6DVG/b1Vl1L6vLwO38TeOBswS4zRwkjY8dF9+RvRdt29Bp6vE/BcNke+SR0kjnPe4lznOO5JPWSvyijatadV5yZdcOwy2w+n0dCOXN8X2sIiLGSAREQBda8m/RpzOpDqG7CTRxjgYdxykn6x9Hr8dlznSmDvakz9XDY5nSnsP2325MaObnH2Ac1ZekMBS0zp6phse3aGuzYu7Xu+c4+0lb1jb9JPXe5FS0rxdWlv6PTfrz7lxfx3L4mWREU6cqCIiAIiIAtL4t6Gra208a4LYclX3fTnI6ndrT+yf9Ct0ReZwU4uMtzM9tcVLarGrSeUluITylC5i8jPjshXfXtV3lksbxzaf+dq8yq/jJw0q6yom9QEdfNwN/FyHk2do+Y/7j2eClnJ0bmMvzUMhWkrWoHlkkcg2LSq9c28qEsnuOw4LjVLE6Ostk1vX1XUeZERa5NBERAEREAREQBERAEREAREQBERAF9K0E1mxHWrRPmmlcGRxsG7nOPUAErQTWrEdatE+aaVwZHGxu7nE9QA7VTXBLhdHpiJmczcbJcxKwdCMjcVQewftd59wWe3t5VpZLcRGL4vRwyjrz2ye5c/tzZlOCnD6LRuF9KutbJmLjQbDusRN6xGPDtPaV0NEVhp0404qMdxx27u6t3WlWqvOTCIi9msEREAREQBERAFpHFDhzidbU+m8CplI27Q22jn7GvHzm/WOxbui8zhGcdWS2Ge2uatrUVWjLKSIl1jpXN6TyjqGZpuhO/4uUc45R3td1Hw61hFcuoMJi8/jZMdl6UNuu/rbI3fY94PWD7QuAcQuBmSx5kvaUkdkK3NxqSH8cz2NPU77VC3FhOG2G1d50vCNLaF0lTufUnz/S/L4/M4yi+tutYp2X1rcEtedh2fHIwtc3xBXyWgW9NNZoIiIfQiIgCIiAIiIAiL9wxSzTNhhjfLI87NYxpc5x9gHWh8byPwsppnT+X1Jk2Y7DUpLU7uvbk1g73O6gPFdH4f8Ec5mHxXNRF+Ipb7+ZI3nkHdt8z38/YqD0tpvDaZxrcfhqUdaEfKI5vee9zuslb1vYzqbZbEVPF9K7e0Tp2/rz7l2vj2L5mp8KeF+L0bALtroXsw9vrWHN9WL9mMHq8esroaIpqnTjTjqxWw5nd3da7qurWlnJhERezWCIiAIiIAiIgCIiAIiIAiIgMFqrSOntTweazWMgskDZsu3Rkb4OHMLkOqfJ+O75tNZnlzLa9xv1B7fvC72iwVbanV95EpY4ze2OyjUeXJ7V8n9CNtQ8OtaYMvN3A2nxNPOWu3zrPi371qkjXRyGORpY9vItcNiPcr0WPyeEw+TYWZLF0rgI2PnoGv+0LRnhi/TItNtpzNLKvST608u55+JDSKwbnCrQFo7v03Vjd3xOcz6gdljJOCfD15/wDK7Lf8NyUfesLw2rwaJSGm1i/ehJfBeZKKKro+CfD1n/tdl3+K5KfvWRp8KdAVti3TlaQg7gyuc/7Sviw2rxaE9NrBe7GT+C8yQBzcGDm4nYAdZK2fAaB1jnHD0DAXTGf+rKzzbB73bKu8Zp/B4wAY7D0Km3bDXa0/EBZNZ4YYv1SIy405k1lQpZdbefcsvEnzSnk/25HNm1Nl2QN6zXpjpOPs6ZGw9wK7BpDQ+mdKxgYfGRRzbbOsP9eV3i48/hstjRbtK2pUvdW0q99jd9fbKs9nJbF9/iERFsESEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREAREQBERAEREB//2Q==" alt="NZF" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;">
+      <div><div class="logo-name">National Zakat Foundation</div><div class="logo-sub">Australia</div></div>
+    </a>
+    <div class="hdr-right"><span class="mode-badge">Business</span><button class="btn-start-over" onclick="startOver()">&#x21BA; Start over</button></div>
+  </header>
+
+  <div class="result-hero">
+    <div class="rh-ey">Business Zakat Report</div>
+    <div class="rh-big" id="br-amount">A$0.00</div>
+    <div class="rh-sub" id="br-sub">Based on A$0.00 net zakatable wealth</div>
+    <div class="rh-msg" id="br-msg">Alhamdulillah</div>
+  </div>
+
+  <div class="result-body">
+    <div class="result-actions">
+      <button class="btn btn-red" onclick="alert('Redirecting to nzf.org.au/pay/zakat')">Pay your Zakat &#8594;</button>
+      <button class="btn btn-outline" onclick="bDownloadPDF()">&#8659; Download PDF</button>
+      <button class="btn btn-outline" onclick="go('sc-b-deduct')">&#8592; Adjust figures</button>
+      <button class="btn btn-outline" onclick="startOver()">&#x21BA; Start over</button>
+    </div>
+
+    <div class="d-method-summary">
+      <div class="dms-title">Methods applied</div>
+      <div class="dms-row"><span class="dms-key">Nisab standard</span><span class="dms-val" id="br-nisab-method">Silver &mdash; A$2,028.95</span></div>
+      <div class="dms-row"><span class="dms-key">Business structure</span><span class="dms-val" id="br-biz-type">Not specified</span></div>
+      <div class="dms-row"><span class="dms-key">Inventory valuation</span><span class="dms-val" id="br-stock-method">Cost price</span></div>
+      <div class="dms-row"><span class="dms-key">Receivables</span><span class="dms-val">Good 100% / Doubtful 50% / Bad 0%</span></div>
+      <div class="dms-row"><span class="dms-key">Zakat rate</span><span class="dms-val">2.5% (1/40 of zakatable wealth)</span></div>
+    </div>
+
+    <div class="breakdown">
+      <div class="bkd-h">Business breakdown</div>
+      <div class="bkd-row"><span class="bkd-lbl">Business cash and bank</span><span class="bkd-val" id="br-cash">A$0.00</span></div>
+      <div class="bkd-row"><span class="bkd-lbl">Trading inventory</span><span class="bkd-val" id="br-stock">A$0.00</span></div>
+      <div class="bkd-row"><span class="bkd-lbl">Receivables (adjusted)</span><span class="bkd-val" id="br-rec">A$0.00</span></div>
+      <div class="bkd-row" style="background:var(--bg);"><span class="bkd-lbl" style="font-weight:700;color:var(--black);">Gross business assets</span><span class="bkd-val" id="br-gross">A$0.00</span></div>
+      <div class="bkd-row"><span class="bkd-lbl">Business payables (immediate)</span><span class="bkd-val neg" id="br-deduct">-A$0.00</span></div>
+      <div class="bkd-row zak-total"><span class="bkd-lbl">Net zakatable wealth</span><span class="bkd-val" id="br-zakatable">A$0.00</span></div>
+      <div class="bkd-row"><span class="bkd-lbl">Nisab threshold</span><span class="bkd-val" id="br-nisab-val">A$2,028.95</span></div>
+      <div class="bkd-row"><span class="bkd-lbl">Nisab reached</span><span class="bkd-val" id="br-nisab-met">Calculating...</span></div>
+      <div class="bkd-row zak-due"><span class="bkd-lbl">Business Zakat due (2.5%)</span><span class="bkd-val" id="br-zakat">A$0.00</span></div>
+    </div>
+
+    <div class="save-bar">
+      <div class="save-bar-text"><div class="save-bar-title">Save your report</div><div class="save-bar-sub">Email a summary with PDF attached, or download it directly.</div></div>
+      <div class="save-row"><input type="email" class="save-inp" id="b-save-email" placeholder="your@email.com"><button class="save-btn" onclick="bSendEmail()">Send</button><button class="save-btn" style="background:var(--grey);margin-left:4px;" onclick="bDownloadPDF()">PDF</button></div>
+      <div id="b-save-msg" style="font-size:11px;width:100%;display:none;"></div>
+    </div>
+
+    <div class="dua">
+      <div class="dua-arabic">&#x627;&#x644;&#x644;&#x651;&#x647;&#x64F;&#x645;&#x651; &#x627;&#x62C;&#x652;&#x639;&#x644;&#x652;&#x647;&#x627; &#x645;&#x64E;&#x63A;&#x652;&#x646;&#x64E;&#x645;&#x64B;&#x627; &#x648;&#x644;&#x627; &#x62A;&#x64E;&#x62C;&#x652;&#x639;&#x644;&#x652;&#x647;&#x627; &#x645;&#x64E;&#x63A;&#x652;&#x631;&#x64E;&#x645;&#x64B;&#x627;</div>
+      <div class="dua-trans">"O Allah, make it a gain and do not make it a loss." <span style="font-size:10px;opacity:.6;">Du'a upon paying Zakat</span></div>
+    </div>
+    <div class="help-strip" style="max-width:800px;margin:0 auto 20px;">
+      <div class="help-strip-title">Need some help?</div>
+      <div class="help-strip-desc">Speak directly with our Zakat experts.</div>
+      <div class="help-strip-actions" style="flex-direction:row;">
+        <a class="help-btn" href="https://docs.google.com/forms/d/e/1FAIpQLScYTmR3bOntJ8-ocUk0YACYP7EM8jQSdcFGWl0aL0HfLD41XA/viewform" target="_blank" rel="noopener" style="flex:1;justify-content:center;">
+          <span class="help-btn-icon">&#128197;</span>Book a consultation
+        </a>
+        <a class="help-btn" href="tel:0449004663" style="flex:1;justify-content:center;">
+          <span class="help-btn-icon">&#128222;</span>0449 004 663
+        </a>
+      </div>
+    </div>
+
+    <div style="text-align:center;font-size:10px;color:var(--light-grey);padding-bottom:16px;">National Zakat Foundation Australia | 1300 663 729 | 0449 004 663 | nzf.org.au</div>
+  </div>
+  <div id="b-print-overlay"></div>
 </div>
 
 
