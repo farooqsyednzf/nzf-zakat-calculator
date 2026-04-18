@@ -536,9 +536,6 @@ body{font-family:var(--font-body);color:var(--black);background:var(--bg);line-h
   flex-shrink: 0;
 }
 
-
-/* Hide business step in detailed mode rail */
-body.mode-detailed .d-step-rail .stp-business { display: none !important; }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -607,8 +604,8 @@ body.mode-detailed .d-step-rail .stp-business { display: none !important; }
     <div class="mc" onclick="selectMode('detailed')">
       <div class="mc-icon">📊</div>
       <div class="mc-title">Detailed</div>
-      <div class="mc-desc">For individuals with complex personal assets. A full 6-step flow with methodology choices for shares, super and crypto.</div>
-      <ul class="mc-feats"><li>Shares methodology selector</li><li>Superannuation decision tree</li><li>Crypto treatment options</li></ul>
+      <div class="mc-desc">Combine personal and business Zakat in one calculation. Recommended for sole traders.</div>
+      <ul class="mc-feats"><li>Personal + business in one flow</li><li>Shares and super methodology</li><li>Crypto and inventory options</li></ul>
       <div class="mc-chat-strip">
         <div class="mc-chat-dot"></div>
         <div class="mc-chat-text">
@@ -616,13 +613,13 @@ body.mode-detailed .d-step-rail .stp-business { display: none !important; }
           <span>Get help with complex calculations directly from our knowledge base</span>
         </div>
       </div>
-      <div class="mc-time">~12&ndash;15 minutes</div>
+      <div class="mc-time">~15&ndash;20 minutes</div>
       <div class="mc-cta">Start detailed <span>→</span></div>
     </div>
     <div class="mc" onclick="selectMode('business')">
       <div class="mc-icon">🏢</div>
-      <div class="mc-title">Business</div>
-      <div class="mc-desc">Specifically for business owners. Covers business cash, inventory, receivables and payables only.</div>
+      <div class="mc-title">Business only</div>
+      <div class="mc-desc">For partnerships and companies calculating business Zakat separately from personal wealth.</div>
       <ul class="mc-feats"><li>Business structure selector</li><li>Inventory valuation method</li><li>Trade receivables and payables</li></ul>
       <div class="mc-chat-strip">
         <div class="mc-chat-dot"></div>
@@ -2440,7 +2437,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp active"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 1 of 6: Nisab Threshold</div>
+      <div class="eyebrow">Step 1 of 7: Nisab Threshold</div>
       <h2 class="ph1">Before you begin</h2>
       <p class="plead">Choose your Nisab standard. This is the only setting needed before entering your assets.</p>
 
@@ -2509,7 +2506,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp active"><div class="stp-n">2</div>Cash & Savings</div><div class="stp"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 2 of 6: Cash and Savings</div>
+      <div class="eyebrow">Step 2 of 7: Cash and Savings</div>
       <h2 class="ph1">Cash and personal assets</h2>
       <p class="plead">Include all liquid personal wealth as at your Zakat anniversary date. List each account separately.</p>
 
@@ -2582,7 +2579,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-hawl')">&#8592; Back</button>
-    <span class="nav-info">Step 2 of 6: Cash and Savings</span>
+    <span class="nav-info">Step 2 of 7: Cash and Savings</span>
     <button class="btn btn-red" onclick="go('sc-d-gold')">Next: Gold and Silver &#8594;</button>
   </div>
 </div>
@@ -2599,7 +2596,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp active"><div class="stp-n">3</div>Gold & Silver</div><div class="stp"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 3 of 6: Gold and Silver</div>
+      <div class="eyebrow">Step 3 of 7: Gold and Silver</div>
       <h2 class="ph1">Gold and silver</h2>
       <p class="plead">Enter each item separately with weight, unit and purity. The AUD value is calculated from today's spot price. Gold and silver jewellery is zakatable under the majority scholarly position.</p>
       <div class="info info-blue" style="margin-bottom:16px;"><strong>Spot prices:</strong> Gold A$217.82/g (24ct) &nbsp;&#183;&nbsp; Silver A$3.41/g &nbsp;&#183;&nbsp; <em style="font-size:11px;">Connect a live metals API in production.</em></div>
@@ -2652,7 +2649,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-cash')">&#8592; Back</button>
-    <span class="nav-info">Step 3 of 6: Gold and Silver</span>
+    <span class="nav-info">Step 3 of 7: Gold and Silver</span>
     <button class="btn btn-red" onclick="go('sc-d-invest')">Next: Investments &#8594;</button>
   </div>
 </div>
@@ -2669,7 +2666,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp active"><div class="stp-n">4</div>Investments</div><div class="stp stp-business"><div class="stp-n">5</div>Business</div><div class="stp"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 4 of 6: Investments</div>
+      <div class="eyebrow">Step 4 of 7: Investments</div>
       <h2 class="ph1">Investments</h2>
       <p class="plead">Different asset types have different scholarly treatments. Choose the approach that best fits your situation for each one.</p>
 
@@ -2802,8 +2799,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-gold')">&#8592; Back</button>
-    <span class="nav-info">Step 4 of 6: Investments</span>
-    <button class="btn btn-red" onclick="go('sc-d-deduct')">Next: Deductions &#8594;</button>
+    <span class="nav-info">Step 4 of 7: Investments</span>
+    <button class="btn btn-red" onclick="go('sc-d-biz')">Next: Business Assets &#8594;</button>
   </div>
 </div>
 
@@ -2902,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     </div>
   </div>
   <div class="nav-bar">
-    <button class="btn btn-outline" onclick="go('sc-d-invest')">&#8592; Back</button>
+    <button class="btn btn-outline" onclick="go('sc-d-biz')">&#8592; Back</button>
     <span class="nav-info">Step 5 of 7: Business Assets</span>
     <button class="btn btn-red" onclick="go('sc-d-deduct')">Next: Deductions &#8594;</button>
   </div>
@@ -2920,7 +2917,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   <div class="d-step-rail"><div class="stp done"><div class="stp-n">1</div>Hawl & Nisab</div><div class="stp done"><div class="stp-n">2</div>Cash & Savings</div><div class="stp done"><div class="stp-n">3</div>Gold & Silver</div><div class="stp done"><div class="stp-n">4</div>Investments</div><div class="stp stp-business done"><div class="stp-n">5</div>Business</div><div class="stp active"><div class="stp-n">6</div>Deductions</div><div class="stp"><div class="stp-n">7</div>Result</div></div>
   <div class="layout">
     <div class="main fade-in">
-      <div class="eyebrow">Step 5 of 6: Deductions</div>
+      <div class="eyebrow">Step 6 of 7: Deductions</div>
       <h2 class="ph1">Deductions and liabilities</h2>
       <p class="plead">Only debts that are due right now can be deducted. Long-term loans like a mortgage cannot be deducted in full — only the current instalment may qualify.</p>
       <div class="info info-red"><strong>Core rule:</strong> Only debts payable within this lunar month can be deducted. A 30-year mortgage cannot be deducted in full. Only this month's repayment instalment qualifies.</div>
@@ -2987,7 +2984,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   </div>
   <div class="nav-bar">
     <button class="btn btn-outline" onclick="go('sc-d-invest')">&#8592; Back</button>
-    <span class="nav-info">Step 5 of 6: Deductions</span>
+    <span class="nav-info">Step 6 of 7: Deductions</span>
     <button class="btn btn-green" onclick="goResult('detailed')">View my report &#8594;</button>
   </div>
 </div>
@@ -3130,7 +3127,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       </div>
 
       <div class="info info-yellow" style="margin-top:4px;">
-        <strong>If you're a sole trader,</strong> your business and personal wealth may be calculated together. Use the Detailed calculator instead and include business cash in your personal totals. This Business calculator is best for partnerships, companies, or sole traders who wish to calculate business separately.
+        <strong>Sole trader?</strong> You can combine business and personal Zakat in one calculation. Use the Detailed calculator instead, which includes a business section. This Business-only calculator is best for partnerships, companies, or sole traders who prefer to calculate business Zakat separately.
       </div>
 
       <div class="ex open" id="bx-nisab">
